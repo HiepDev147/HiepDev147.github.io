@@ -6,23 +6,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    <title>Nén ảnh</title>
-    <style>
-        body { font-family: "Open Sans", serif; background-color: #f0f0f0; color: #333; }
-        h1 { text-align: center; }
-        .button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 10px; border: none; cursor: pointer; }
-        .button:hover { background-color: #45a049; }
-        .button-gray { background-color: #ccc; color: white; padding: 10px 20px; margin: 10px; border: none; cursor: not-allowed; }
-        table { width: 100%; border-collapse: collapse; background-color: white; margin-bottom: 20px; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-        .container { margin-bottom: 20px; padding: 10px; background-color: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
-        .error { color: red; }
-        .progress { width: 100%; background-color: #f3f3f3; border-radius: 13px; overflow: hidden; }
-        .progress-bar { height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white; }
-       .footer{background:#333;color:#fff;text-align:center;padding:10px 0;position:fixed;width:100%;}
-       .footer{bottom:0;}
-       .footer.top{top:0;bottom:auto;}
-       .footer.middle{bottom:50%;transform:translateY(50%);}
+    <title>Image Compression</title>
+    <style>body { font-family: "Open Sans", sans-serif; background-color: #f7f9fc; color: #333; margin: 0; padding: 0; } h1 { text-align: center; font-size: 2.5rem; color: #333; margin: 0; padding: 10px 0; font-weight: 600; } .button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; } .button:hover { background-color: #45a049; } .button-gray { background-color: #ddd; color: #888; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 1rem; } table { width: 100%; border-collapse: collapse; background-color: white; margin: 0; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); } th, td { padding: 10px; border: 1px solid #ddd; text-align: center; font-size: 1rem; color: #666; } th { background-color: #f1f1f1; font-weight: 600; } .container { margin: 10px 0; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); } .error { color: #f44336; font-weight: bold; } .progress { width: 100%; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; margin: 5px 0; } .progress-bar { height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white; font-size: 1rem; transition: width 0.5s ease; } .footer { background-color: #333; color: white; text-align: center; padding: 10px 0; position: fixed; width: 100%; bottom: 0; font-size: 1rem; } .footer.top { top: 0; bottom: auto; } .footer.middle { bottom: 50%; transform: translateY(50%); }
     </style>
 </head>
 <body>
@@ -46,15 +31,23 @@
 
         for (const file of files) {
             if (file.type === 'image/heic' || file.type === 'image/webp') {
-                container.innerHTML += `<div class="error">We do not support ${file.name} with format ${file.type}.</div>`;
-                continue;
-            }
+    const fileType = file.type.split('/')[1]; // Lấy loại tệp (ví dụ: webp)
+    container.innerHTML += `<div class="error">We do not support ${file.name} with format ${fileType}.</div>`;
+    continue;
+}
 
             if (file.size < 50 * 1024) { // 50 kB minimum file size check
                 container.innerHTML += `<div class="error">Image ${file.name} is too small to compress.</div>`;
                 continue;
             }
+            const fileTypeMap = {
+    'image/jpeg': 'Jpeg',
+    'image/png': 'Png',
+    'image/gif': 'Gif',
+    // Thêm các loại tệp khác nếu cần
+};
 
+const fileType = fileTypeMap[file.type] || file.type.split('/')[1]; // Lấy tên tệp nếu có trong map, hoặc lấy phần sau dấu '/'
             const reader = new FileReader();
             reader.onload = (e) => {
                 const div = document.createElement('div');
@@ -69,7 +62,7 @@
                             <td>Image</td>
                             <td><img src="${e.target.result}" style="max-width: 100px; max-height: 100px;"></td>
                         </tr>
-                        <tr><td>Format - Size</td><td>${file.type} - ${fileSize}</td></tr>
+                        <tr><td>Format - Size</td><td>${fileType} - ${fileSize}</td></tr>
                         <tr><td>Resolution</td><td id="${file.name}_resolution">Loading...</td></tr>
                         <tr>
                             <td>Compress --% - Size</td>
