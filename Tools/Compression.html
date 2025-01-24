@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <title>Nén ảnh</title>
+    <style>
+        body { font-family: "Open Sans", serif; background-color: #f0f0f0; color: #333; }
+        h1 { text-align: center; }
+        .button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 10px; border: none; cursor: pointer; }
+        .button:hover { background-color: #45a049; }
+        .button-gray { background-color: #ccc; color: white; padding: 10px 20px; margin: 10px; border: none; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; background-color: white; margin-bottom: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+        .container { margin-bottom: 20px; padding: 10px; background-color: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+        .error { color: red; }
+        .progress { width: 100%; background-color: #f3f3f3; border-radius: 13px; overflow: hidden; }
+        .progress-bar { height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white; }
+       .footer{background:#333;color:#fff;text-align:center;padding:10px 0;position:fixed;width:100%;}
+       .footer{bottom:0;}
+       .footer.top{top:0;bottom:auto;}
+       .footer.middle{bottom:50%;transform:translateY(50%);}
+    </style>
+</head>
+<body>
+    <h1>Image Compressor</h1>
+    <div style="text-align: center;">
+        <button class="button" onclick="document.getElementById('fileInput').click()">+ Add file</button>
+        <input id="fileInput" type="file" accept="image/*" multiple style="display:none;" onchange="loadFiles(event)">
+        <button class="button" onclick="compressAll()">Compress now</button>
+        <button class="button" onclick="downloadAll()">Download All</button>
+    </div>
+
+    <div id="imageContainers"></div>
+
+<script>
+    const downloadLinks = [];
+
+    async function loadFiles(event) {
+        const files = event.target.files;
+        const container = document.getElementById('imageContainers');
+        container.innerHTML = '';
+
+        for (const file of files) {
+            if (file.type === 'image/heic' || file.type === 'image/webp') {
+                container.innerHTML += `<div class="error">We do not support ${file.name} with format ${file.type}.</div>`;
+                continue;
+            }
+
+            if (file.size < 50 * 1024) { // 50 kB minimum file size check
+                container.innerHTML += `<div class="error">Image ${file.name} is too small to compress.</div>`;
+                continue;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const div = document.createElement('div');
+                div.className = 'container';
+                const fileSize = (file.size < 1024 * 1024) 
+                    ? `${(file.size / 1024).toFixed(2)} kB` 
+                    : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                div.innerHTML = `
+                    <table>
+                        <tr><td>File name</td><td>${file.name}</td></tr>
+                        <tr>
+                            <td>Image</td>
+                            <td><img src="${e.target.result}" style="max-width: 100px; max-height: 100px;"></td>
+                        </tr>
+                        <tr><td>Format - Size</td><td>${file.type} - ${fileSize}</td></tr>
+                        <tr><td>Resolution</td><td id="${file.name}_resolution">Loading...</td></tr>
+                        <tr>
+                            <td>Compress --% - Size</td>
+                            <td id="${file.name}_compressInfo">-</td>
+                        </tr>
+                        <tr><td colspan="2"><button class="button" onclick="compressImage('${e.target.result}', ${file.size}, '${file.name}', '${file.name}_progress')">Compression</button></td></tr>
+                      <tr>
+    <td colspan="2">
+        <a id="${file.name}_download" href="#" download="${file.name}">
+            <button class="button-gray" id="${file.name}_downloadButton">Download</button>
+        </a>
+    </td>
+</tr>
+                        <tr><td colspan="2"><div class="progress"><div id="${file.name}_progress" class="progress-bar"></div></div></td></tr>
+                    </table>`;
+                container.appendChild(div);
+
+                // Đọc và hiển thị độ phân giải
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    document.getElementById(`${file.name}_resolution`).innerText = `${img.width}x${img.height}`;
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function compressImage(dataUrl, originalSize, fileName, progressElementId) {
+        const canvas = document.createElement('canvas');
+        const img = new Image();
+
+        img.src = dataUrl;
+
+        await new Promise((resolve) => {
+            img.onload = () => resolve();
+        });
+
+        const width = img.width;
+        const height = img.height;
+
+        // Lấy mức nén tối ưu dựa trên kích thước và độ phân giải
+        const compressionPercentage = getOptimalCompression(originalSize, width, height);
+
+        const ctx = canvas.getContext('2d');
+        const compressedWidth = width * compressionPercentage / 100;
+        const compressedHeight = height * compressionPercentage / 100;
+
+        canvas.width = compressedWidth;
+        canvas.height = compressedHeight;
+        ctx.drawImage(img, 0, 0, compressedWidth, compressedHeight);
+
+        updateProgressBar(document.getElementById(progressElementId), 50);
+
+        const blob = await new Promise((resolve) => {
+            canvas.toBlob((blob) => resolve(blob), 'image/jpeg', compressionPercentage / 100);
+        });
+
+        const url = URL.createObjectURL(blob);
+        const compressedSize = (blob.size < 1024 * 1024) 
+            ? `${(blob.size / 1024).toFixed(2)} kB` 
+            : `${(blob.size / (1024 * 1024)).toFixed(2)} MB`;
+
+        document.getElementById(`${fileName}_download`).href = url;
+        document.getElementById(`${fileName}_compressInfo`).innerText = `Compressed -${compressionPercentage}% - ${compressedSize}`;
+
+        updateProgressBar(document.getElementById(progressElementId), 100);
+
+        const downloadButton = document.getElementById(`${fileName}_downloadButton`);
+        downloadButton.className = "button";
+        downloadButton.style.cursor = "pointer";
+        downloadLinks.push(url);
+    }
+
+    async function compressAll() {
+        const containers = document.getElementsByClassName('container');
+        const promises = [];
+
+        Array.from(containers).forEach(container => {
+            const button = container.querySelector('button');
+            promises.push(new Promise((resolve) => {
+                button.click();
+                resolve();
+            }));
+        });
+
+        await Promise.all(promises);
+        console.log("All images compressed.");
+    }
+
+    function downloadAll() {
+  const containers = document.getElementsByClassName('container');
+
+  Array.from(containers).forEach(container => {
+    const downloadLink = container.querySelector('a');
+    const fileName = downloadLink.download; // Lấy tên file gốc
+    const a = document.createElement('a');
+    a.href = downloadLink.href; // URL của file nén
+    a.download = fileName; // Đặt lại tên file gốc
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+}
+
+    function getOptimalCompression(originalSize, width, height) {
+        const resolution = width * height;
+
+        // Quy tắc nén dựa trên kích thước file
+        if (originalSize > 10 * 1024 * 1024) return 40; // File > 10 MB
+        if (originalSize > 5 * 1024 * 1024) return 50; // File 5-10 MB
+
+        // Quy tắc nén dựa trên độ phân giải ảnh
+        if (resolution > 8_000_000) return 45; // Độ phân giải > 8MP
+        if (resolution > 4_000_000) return 60; // Độ phân giải 4-8MP
+
+        return 70; // Mặc định cho ảnh nhỏ hơn
+    }
+
+    function updateProgressBar(progressElement, percentage) {
+        progressElement.style.width = percentage + '%';
+        progressElement.innerText = percentage + '%';
+    }
+</script>
+<footer class="footer">
+        Copyright © 2024 - 2025 HiepDev147. All Rights Reserved
+    </footer>
+</body>
+</html>

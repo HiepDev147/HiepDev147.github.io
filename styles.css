@@ -1,0 +1,97 @@
+/* styles.css */
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9; /* Light grey background */
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+header {
+    background-color: #2C3E50; /* Darker blue for professionalism */
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+h1 {
+    font-size: 38px;
+    margin: 0;
+    font-weight: bold;
+}
+
+p {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+#tools {
+    padding: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+h2 {
+    font-size: 30px;
+    color: #2C3E50; /* Dark blue */
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    background-color: #ffffff; /* White background for tool items */
+    margin: 20px 0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Soft shadow for a clean look */
+}
+
+h3 {
+    font-size: 26px;
+    color: #2980B9; /* Lighter blue accent */
+    font-weight: bold;
+}
+
+a {
+    display: inline-block;
+    background-color: #2980B9; /* Blue for the buttons */
+    color: white;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+a:hover {
+    background-color: #1D6A8C; /* Darker blue for hover effect */
+    transition: background-color 0.3s;
+}
+        .footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    position: fixed;
+    bottom: 0; /* For bottom position */
+    width: 100%;
+}
+
+/* For placing the footer at the top */
+.footer.top {
+    bottom: auto;
+    top: 0;
+}
+
+/* For placing the footer in the middle */
+.footer.middle {
+    bottom: 50%;
+    transform: translateY(50%);
+}
