@@ -1,194 +1,305 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    <title>Image Compression</title>
-    <style>body { font-family: "Open Sans", sans-serif; background-color: #f7f9fc; color: #333; margin: 0; padding: 0; } h1 { text-align: center; font-size: 2.5rem; color: #333; margin: 0; padding: 10px 0; font-weight: 600; } .button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; } .button:hover { background-color: #45a049; } .button-gray { background-color: #ddd; color: #888; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 1rem; } table { width: 100%; border-collapse: collapse; background-color: white; margin: 0; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); } th, td { padding: 10px; border: 1px solid #ddd; text-align: center; font-size: 1rem; color: #666; } th { background-color: #f1f1f1; font-weight: 600; } .container { margin: 10px 0; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); } .error { color: #f44336; font-weight: bold; } .progress { width: 100%; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; margin: 5px 0; } .progress-bar { height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white; font-size: 1rem; transition: width 0.5s ease; } .footer { background-color: #333; color: white; text-align: center; padding: 10px 0; position: fixed; width: 100%; bottom: 0; font-size: 1rem; } .footer.top { top: 0; bottom: auto; } .footer.middle { bottom: 50%; transform: translateY(50%); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Compressor - Nâng Cấp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: "Open Sans", sans-serif; background-color: #f7f9fc; color: #333; margin: 0; padding: 0; }
+    h1 { text-align: center; font-size: 2.5rem; color: #333; margin: 0; padding: 10px 0; font-weight: 600; }
+    .button { background-color: #4CAF50; color: white; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: background-color 0.3s ease; }
+    .button:hover { background-color: #45a049; }
+    .button-gray { background-color: #ddd; color: #888; padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: not-allowed; font-size: 1rem; }
+    table { width: 100%; border-collapse: collapse; background-color: white; margin: 0; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; font-size: 1rem; color: #666; }
+    th { background-color: #f1f1f1; font-weight: 600; }
+    .container { margin: 10px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .error { color: #f44336; font-weight: bold; }
+    .progress { width: 100%; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; margin: 5px 0; }
+    .progress-bar { height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white; font-size: 1rem; transition: width 0.5s ease; }
+    .footer { background-color: #333; color: white; text-align: center; padding: 10px 0; position: fixed; width: 100%; bottom: 0; font-size: 1rem; }
+    /* Style cho khu vực drag & drop */
+    #dropArea { width: 80%; margin: 20px auto; padding: 20px; border: 2px dashed #ccc; text-align: center; color: #888; }
+  </style>
 </head>
 <body>
-    <h1>Image Compressor</h1>
-    <div style="text-align: center;">
-        <button class="button" onclick="document.getElementById('fileInput').click()">+ Add file</button>
-        <input id="fileInput" type="file" accept="image/*" multiple style="display:none;" onchange="loadFiles(event)">
-        <button class="button" onclick="compressAll()">Compress now</button>
-        <button class="button" onclick="downloadAll()">Download All</button>
-    </div>
+  <h1>Image Compressor</h1>
+  <div style="text-align: center; margin-bottom: 20px;">
+    <button class="button" onclick="document.getElementById('fileInput').click()">+ Thêm file</button>
+    <input id="fileInput" type="file" accept="image/*" multiple style="display:none;" onchange="handleFiles(this.files)">
+    <button class="button" onclick="compressAll()">Nén tất cả</button>
+    <button class="button" onclick="downloadAll()">Tải về tất cả</button>
+  </div>  <!-- Các dropdown tùy chọn -->  <div style="text-align: center; margin-bottom: 20px;">
+    <label for="qualitySelect">Chọn chất lượng: </label>
+    <select id="qualitySelect">
+      <option value="0.9">Cao</option>
+      <option value="0.7" selected>Trung bình</option>
+      <option value="0.5">Thấp</option>
+    </select><label for="resolutionSelect" style="margin-left: 20px;">Chọn độ phân giải: </label>
+<select id="resolutionSelect">
+  <option value="original">Giữ nguyên</option>
+  <option value="auto" selected>Tự động giảm kích thước</option>
+</select>
 
-    <div id="imageContainers"></div>
+<label for="formatSelect" style="margin-left: 20px;">Chọn định dạng: </label>
+<select id="formatSelect">
+  <option value="image/jpeg" selected>JPEG</option>
+  <option value="image/webp">WebP</option>
+</select>
 
-<script>
-    const downloadLinks = [];
+  </div>  <!-- Thanh tiến trình tổng thể -->  <div id="overallProgressContainer" style="width: 80%; margin: 10px auto; background-color: #e0e0e0; border-radius: 15px; overflow: hidden;">
+    <div id="overallProgressBar" style="height: 20px; width: 0%; background-color: #4CAF50; text-align: center; line-height: 20px; color: white;">0%</div>
+  </div>  <!-- Khu vực Drag & Drop -->  <div id="dropArea">
+    Kéo và thả ảnh vào đây
+  </div>  <!-- Container hiển thị ảnh -->  <div id="imageContainers"></div>  <script>
+    // Global variables
+    let overallProgress = {}; // theo dõi tiến trình của từng ảnh
+    let imageCounter = 0; // tạo id duy nhất cho từng ảnh
 
-    async function loadFiles(event) {
-        const files = event.target.files;
-        const container = document.getElementById('imageContainers');
-        container.innerHTML = '';
-
-        for (const file of files) {
-            if (file.type === 'image/heic' || file.type === 'image/webp') {
-    const fileType = file.type.split('/')[1]; // Lấy loại tệp (ví dụ: webp)
-    container.innerHTML += `<div class="error">We do not support ${file.name} with format ${fileType}.</div>`;
-    continue;
-}
-
-            if (file.size < 50 * 1024) { // 50 kB minimum file size check
-                container.innerHTML += `<div class="error">Image ${file.name} is too small to compress.</div>`;
-                continue;
-            }
-            const fileTypeMap = {
-    'image/jpeg': 'Jpeg',
-    'image/png': 'Png',
-    'image/gif': 'Gif',
-    // Thêm các loại tệp khác nếu cần
-};
-
-const fileType = fileTypeMap[file.type] || file.type.split('/')[1]; // Lấy tên tệp nếu có trong map, hoặc lấy phần sau dấu '/'
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const div = document.createElement('div');
-                div.className = 'container';
-                const fileSize = (file.size < 1024 * 1024) 
-                    ? `${(file.size / 1024).toFixed(2)} kB` 
-                    : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-                div.innerHTML = `
-                    <table>
-                        <tr><td>File name</td><td>${file.name}</td></tr>
-                        <tr>
-                            <td>Image</td>
-                            <td><img src="${e.target.result}" style="max-width: 100px; max-height: 100px;"></td>
-                        </tr>
-                        <tr><td>Format - Size</td><td>${fileType} - ${fileSize}</td></tr>
-                        <tr><td>Resolution</td><td id="${file.name}_resolution">Loading...</td></tr>
-                        <tr>
-                            <td>Compress --% - Size</td>
-                            <td id="${file.name}_compressInfo">-</td>
-                        </tr>
-                        <tr><td colspan="2"><button class="button" onclick="compressImage('${e.target.result}', ${file.size}, '${file.name}', '${file.name}_progress')">Compression</button></td></tr>
-                      <tr>
-    <td colspan="2">
-        <a id="${file.name}_download" href="#" download="${file.name}">
-            <button class="button-gray" id="${file.name}_downloadButton">Download</button>
-        </a>
-    </td>
-</tr>
-                        <tr><td colspan="2"><div class="progress"><div id="${file.name}_progress" class="progress-bar"></div></div></td></tr>
-                    </table>`;
-                container.appendChild(div);
-
-                // Đọc và hiển thị độ phân giải
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    document.getElementById(`${file.name}_resolution`).innerText = `${img.width}x${img.height}`;
-                };
-            };
-            reader.readAsDataURL(file);
+    // Cập nhật thanh tiến trình tổng thể
+    function updateOverallProgressBar() {
+      const keys = Object.keys(overallProgress);
+      if (keys.length === 0) {
+        document.getElementById('overallProgressBar').style.width = '0%';
+        document.getElementById('overallProgressBar').innerText = '0%';
+        return;
+      }
+      const total = keys.reduce((sum, key) => sum + overallProgress[key], 0);
+      const avg = Math.round(total / keys.length);
+      document.getElementById('overallProgressBar').style.width = avg + '%';
+      document.getElementById('overallProgressBar').innerText = avg + '%';
+    }
+    
+    // Xử lý file từ input và drag & drop
+    function handleFiles(files) {
+      const container = document.getElementById('imageContainers');
+      container.innerHTML = '';
+      overallProgress = {};
+      
+      if (files.length > 10) {
+        alert("Bạn chỉ có thể tải tối đa 10 ảnh.");
+        return;
+      }
+      
+      for (const file of files) {
+        // Kiểm tra định dạng file: cho phép các định dạng ảnh, hỗ trợ HEIC, webp (sẽ chuyển đổi)
+        if (!file.type.startsWith('image/')) continue;
+        
+        if (file.size < 50 * 1024) {
+          const div = document.createElement('div');
+          div.className = 'error';
+          div.innerText = `Ảnh ${file.name} quá nhỏ để nén.`;
+          container.appendChild(div);
+          continue;
         }
-    }
-
-    async function compressImage(dataUrl, originalSize, fileName, progressElementId) {
-        const canvas = document.createElement('canvas');
-        const img = new Image();
-
-        img.src = dataUrl;
-
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
+        
+        const fileTypeMap = {
+          'image/jpeg': 'JPEG',
+          'image/png': 'PNG',
+          'image/webp': 'WebP',
+          'image/heic': 'HEIC'
+        };
+        const fileType = fileTypeMap[file.type] || file.type.split('/')[1];
+        const fileSize = (file.size < 1024 * 1024)
+            ? `${(file.size / 1024).toFixed(2)} kB`
+            : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+        
+        const uniqueId = 'img_' + (imageCounter++);
+        overallProgress[uniqueId] = 0;
+        
+        const div = document.createElement('div');
+        div.className = 'container';
+        div.innerHTML = `
+          <table>
+            <tr><td>Tên file</td><td>${file.name}</td></tr>
+            <tr>
+              <td>Ảnh</td>
+              <td><img id="${uniqueId}_preview" src="" style="max-width: 100px; max-height: 100px;"></td>
+            </tr>
+            <tr><td>Định dạng - Kích thước</td><td>${fileType} - ${fileSize}</td></tr>
+            <tr><td>Độ phân giải</td><td id="${uniqueId}_resolution">Loading...</td></tr>
+            <tr>
+              <td>Nén</td>
+              <td id="${uniqueId}_compressInfo">-</td>
+            </tr>
+            <tr><td colspan="2"><button class="button" id="${uniqueId}_compressButton">Nén ảnh</button></td></tr>
+            <tr>
+              <td colspan="2">
+                <a id="${uniqueId}_download" href="#" download="${file.name}">
+                  <button class="button-gray" id="${uniqueId}_downloadButton" disabled>Tải về</button>
+                </a>
+              </td>
+            </tr>
+            <tr><td colspan="2">
+              <div class="progress"><div id="${uniqueId}_progress" class="progress-bar">0%</div></div>
+            </td></tr>
+          </table>
+        `;
+        container.appendChild(div);
+        
+        // Đọc file để hiển thị ảnh và lấy độ phân giải
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById(uniqueId + '_preview').src = e.target.result;
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            document.getElementById(uniqueId + '_resolution').innerText = `${img.width}x${img.height}`;
+          }
+        };
+        reader.readAsDataURL(file);
+        
+        // Thêm sự kiện cho nút nén
+        document.getElementById(uniqueId + '_compressButton').addEventListener('click', () => {
+          compressImage(uniqueId, file);
         });
-
-        const width = img.width;
-        const height = img.height;
-
-        // Lấy mức nén tối ưu dựa trên kích thước và độ phân giải
-        const compressionPercentage = getOptimalCompression(originalSize, width, height);
-
-        const ctx = canvas.getContext('2d');
-        const compressedWidth = width * compressionPercentage / 100;
-        const compressedHeight = height * compressionPercentage / 100;
-
-        canvas.width = compressedWidth;
-        canvas.height = compressedHeight;
-        ctx.drawImage(img, 0, 0, compressedWidth, compressedHeight);
-
-        updateProgressBar(document.getElementById(progressElementId), 50);
-
-        const blob = await new Promise((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), 'image/jpeg', compressionPercentage / 100);
-        });
-
-        const url = URL.createObjectURL(blob);
-        const compressedSize = (blob.size < 1024 * 1024) 
-            ? `${(blob.size / 1024).toFixed(2)} kB` 
-            : `${(blob.size / (1024 * 1024)).toFixed(2)} MB`;
-
-        document.getElementById(`${fileName}_download`).href = url;
-        document.getElementById(`${fileName}_compressInfo`).innerText = `Compressed -${compressionPercentage}% - ${compressedSize}`;
-
-        updateProgressBar(document.getElementById(progressElementId), 100);
-
-        const downloadButton = document.getElementById(`${fileName}_downloadButton`);
-        downloadButton.className = "button";
-        downloadButton.style.cursor = "pointer";
-        downloadLinks.push(url);
+      }
     }
-
+    
+    // Xử lý drag & drop
+    const dropArea = document.getElementById('dropArea');
+    dropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.style.backgroundColor = '#f0f0f0';
+    });
+    dropArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropArea.style.backgroundColor = '';
+    });
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.style.backgroundColor = '';
+      const files = e.dataTransfer.files;
+      handleFiles(files);
+    });
+    
+    // Sử dụng Web Worker để nén ảnh
+    function compressImage(uniqueId, file) {
+      const compressInfo = document.getElementById(uniqueId + '_compressInfo');
+      compressInfo.innerText = "Đang nén...";
+      const progressBar = document.getElementById(uniqueId + '_progress');
+      progressBar.style.width = '0%';
+      progressBar.innerText = '0%';
+      
+      // Lấy các tùy chọn từ giao diện
+      const qualityFactor = parseFloat(document.getElementById('qualitySelect').value);
+      const resolutionOption = document.getElementById('resolutionSelect').value;
+      const outputFormat = document.getElementById('formatSelect').value;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        // Tạo code cho worker
+        const workerCode = `
+          self.addEventListener('message', async function(e) {
+            function getOptimalCompression(originalSize, width, height) {
+              const resolution = width * height;
+              if (originalSize > 10 * 1024 * 1024) return 40; 
+              if (originalSize > 5 * 1024 * 1024) return 50; 
+              if (resolution > 8000000) return 45; 
+              if (resolution > 4000000) return 60; 
+              return 70;
+            }
+            const { id, dataUrl, originalSize, qualityFactor, resolutionOption, outputFormat } = e.data;
+            try {
+              const response = await fetch(dataUrl);
+              const blob = await response.blob();
+              const imageBitmap = await createImageBitmap(blob);
+              const width = imageBitmap.width;
+              const height = imageBitmap.height;
+              let scaleFactor = 1;
+              if (resolutionOption === "auto") {
+                const computedPercentage = getOptimalCompression(originalSize, width, height);
+                scaleFactor = computedPercentage / 100;
+              }
+              const newWidth = Math.round(width * scaleFactor);
+              const newHeight = Math.round(height * scaleFactor);
+              const offscreen = new OffscreenCanvas(newWidth, newHeight);
+              const ctx = offscreen.getContext('2d');
+              ctx.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
+              self.postMessage({ id, progress: 50 });
+              const newBlob = await offscreen.convertToBlob({ type: outputFormat, quality: qualityFactor });
+              self.postMessage({ id, progress: 100 });
+              self.postMessage({ id, blob: newBlob });
+            } catch (error) {
+              self.postMessage({ id, error: error.message });
+            }
+          });
+        `;
+        const blobWorker = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blobWorker));
+        
+        worker.addEventListener('message', (event) => {
+          const data = event.data;
+          if (data.id !== uniqueId) return;
+          if (data.progress !== undefined) {
+            progressBar.style.width = data.progress + '%';
+            progressBar.innerText = data.progress + '%';
+            overallProgress[uniqueId] = data.progress;
+            updateOverallProgressBar();
+          }
+          if (data.error) {
+            compressInfo.innerText = "Lỗi nén: " + data.error;
+            progressBar.style.backgroundColor = "#f44336";
+          }
+          if (data.blob) {
+            const url = URL.createObjectURL(data.blob);
+            compressInfo.innerText = "Đã nén (" + data.progress + "%)";
+            const downloadLink = document.getElementById(uniqueId + '_download');
+            downloadLink.href = url;
+            const downloadButton = document.getElementById(uniqueId + '_downloadButton');
+            downloadButton.disabled = false;
+            downloadButton.className = "button";
+            downloadButton.style.cursor = "pointer";
+            worker.terminate();
+          }
+        });
+        
+        worker.postMessage({
+          id: uniqueId,
+          dataUrl: dataUrl,
+          originalSize: file.size,
+          qualityFactor: qualityFactor,
+          resolutionOption: resolutionOption,
+          outputFormat: outputFormat
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // Nén tất cả ảnh
     async function compressAll() {
-        const containers = document.getElementsByClassName('container');
-        const promises = [];
-
-        Array.from(containers).forEach(container => {
-            const button = container.querySelector('button');
-            promises.push(new Promise((resolve) => {
-                button.click();
-                resolve();
-            }));
-        });
-
-        await Promise.all(promises);
-        console.log("All images compressed.");
+      const containers = document.getElementsByClassName('container');
+      const promises = [];
+      for (const container of containers) {
+        const compressButton = container.querySelector('button');
+        promises.push(new Promise(resolve => {
+          compressButton.click();
+          resolve();
+        }));
+      }
+      await Promise.all(promises);
+      console.log("Tất cả ảnh đã được nén.");
     }
-
+    
+    // Tải về tất cả ảnh đã nén
     function downloadAll() {
-  const containers = document.getElementsByClassName('container');
-
-  Array.from(containers).forEach(container => {
-    const downloadLink = container.querySelector('a');
-    const fileName = downloadLink.download; // Lấy tên file gốc
-    const a = document.createElement('a');
-    a.href = downloadLink.href; // URL của file nén
-    a.download = fileName; // Đặt lại tên file gốc
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-}
-
-    function getOptimalCompression(originalSize, width, height) {
-        const resolution = width * height;
-
-        // Quy tắc nén dựa trên kích thước file
-        if (originalSize > 10 * 1024 * 1024) return 40; // File > 10 MB
-        if (originalSize > 5 * 1024 * 1024) return 50; // File 5-10 MB
-
-        // Quy tắc nén dựa trên độ phân giải ảnh
-        if (resolution > 8_000_000) return 45; // Độ phân giải > 8MP
-        if (resolution > 4_000_000) return 60; // Độ phân giải 4-8MP
-
-        return 70; // Mặc định cho ảnh nhỏ hơn
+      const containers = document.getElementsByClassName('container');
+      for (const container of containers) {
+        const downloadLink = container.querySelector('a');
+        const fileName = downloadLink.download;
+        if (!downloadLink.href) continue;
+        const a = document.createElement('a');
+        a.href = downloadLink.href;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadLink.href);
+      }
     }
-
-    function updateProgressBar(progressElement, percentage) {
-        progressElement.style.width = percentage + '%';
-        progressElement.innerText = percentage + '%';
-    }
-</script>
-<footer class="footer">
-        Copyright © 2024 - 2025 HiepDev147. All Rights Reserved
-    </footer>
+  </script>  <footer class="footer">
+    Copyright © 2024 - 2025 HiepDev147. All Rights Reserved
+  </footer>
 </body>
 </html>
