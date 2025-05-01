@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Test 3D Single Sphere - Nhẹ nhàng hơn</title>
+  <style>
+    html, body { margin:0; padding:0; overflow:hidden; background:#01010a; font-family:monospace; }
+    canvas { display:block; }
+    #fps {
+      position:absolute; top:10px; left:10px;
+      font-size:16px; font-weight:bold;
+      color:#0ff;
+      text-shadow: 0 0 5px #0ff, 0 0 15px #0ff;
+    }
+    #overlay {
+      position:absolute; width:100%; height:100%;
+      background: rgba(0,0,0,0.7);
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:20px; z-index:10;
+    }
+    #overlay button {
+      margin-top:20px; padding:10px 20px;
+      font-size:18px; cursor:pointer;
+      background: #0ff; border:none; border-radius:5px;
+      box-shadow: 0 0 10px #0ff;
+    }
+  </style>
+</head>
+<body>
+<div id="overlay">
+  <div>
+    <div>Bấm OK để bắt đầu hiệu ứng nhẹ nhàng.</div>
+    <button id="startBtn">OK</button>
+  </div>
+</div>
+<canvas id="canvas"></canvas>
+<div id="fps">FPS: ...</div>
+
+<script>
+  const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+  const fpsEl=document.getElementById('fps');
+  const overlay=document.getElementById('overlay');
+  const startBtn=document.getElementById('startBtn');
+  let W=innerWidth, H=innerHeight;
+  canvas.width=W; canvas.height=H;
+
+  let points = [], rows=80, cols=80;
+  let angleX=0, angleY=0;
+  const sparkles=[];
+  let lastTime=performance.now(), frames=0;
+
+  function init(r) {
+    points = [];
+    for(let i=0; i<=rows; i++){
+      let theta = i * Math.PI/rows;
+      for(let j=0; j<=cols; j++){
+        let phi = j * 2*Math.PI/cols;
+        let x = r * Math.sin(theta)*Math.cos(phi);
+        let y = r * Math.cos(theta);
+        let z = r * Math.sin(theta)*Math.sin(phi);
+        points.push({x,y,z,nx:x,ny:y,nz:z});
+      }
+    }
+  }
+
+  function rotateAndShade(w,h,ax,ay){
+    const cosX=Math.cos(ax), sinX=Math.sin(ax);
+    const cosY=Math.cos(ay), sinY=Math.sin(ay);
+    const L={x:0.5, y:0.7, z:1};
+    const lenL=Math.hypot(L.x,L.y,L.z);
+    L.x/=lenL; L.y/=lenL; L.z/=lenL;
+    const out = points.map(p=>{
+      let y1= p.y*cosX - p.z*sinX;
+      let z1= p.y*sinX + p.z*cosX;
+      let x2= p.x*cosY + z1*sinY;
+      let z2= -p.x*sinY + z1*cosY;
+      let ny1= p.ny*cosX - p.nz*sinX;
+      let nz1= p.ny*sinX + p.nz*cosX;
+      let nx2= p.nx*cosY + nz1*sinY;
+      let nz3= -p.nx*sinY + nz1*cosY;
+      const dot = Math.max(0.2, nx2*L.x + ny1*L.y + nz3*L.z);
+      return { x: x2 + w/2, y: y1 + h/2, z: z2, light: dot };
+    });
+    return out;
+  }
+
+  function render() {
+    const pts = rotateAndShade(W,H,angleX,angleY);
+    ctx.clearRect(0,0,W,H);
+
+    let g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W/2);
+    g.addColorStop(0,'rgba(10,10,30,0.5)');
+    g.addColorStop(1,'rgba(0,0,0,1)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    pts.sort((a,b)=>a.z-b.z);
+    pts.forEach(p=>{
+      let size=Math.max(1,3*(600/(p.z+600)));
+      ctx.globalAlpha=p.light * 0.9;
+      ctx.fillStyle=`rgba(${200*p.light},${170*p.light},255,1)`;
+      ctx.shadowBlur=20*p.light;
+      ctx.shadowColor='rgba(180,220,255,0.5)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,size,0,2*Math.PI); ctx.fill();
+    });
+
+    if(Math.random()<0.1) sparkles.push({ x:Math.random()*W, y:Math.random()*H, alpha:0.8, size:Math.random()*2+1 });
+    for(let i=sparkles.length-1;i>=0;i--){
+      let s=sparkles[i];
+      ctx.globalAlpha=s.alpha;
+      ctx.fillStyle='#fff'; ctx.beginPath();
+      ctx.arc(s.x,s.y,s.size,0,2*Math.PI); ctx.fill();
+      s.alpha-=0.02; if(s.alpha<=0) sparkles.splice(i,1);
+    }
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+
+    frames++;
+    let now=performance.now();
+    if(now-lastTime>=1000){ fpsEl.textContent=`FPS: ${frames}`; frames=0; lastTime=now; }
+  }
+
+  function animate(){
+    render();
+    requestAnimationFrame(animate);
+  }
+
+  startBtn.onclick = ()=>{ overlay.style.display='none'; init(H*0.3); animate(); };
+
+  let dragging = false, lastX=0, lastY=0;
+  canvas.addEventListener('mousedown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
+  canvas.addEventListener('mousemove', e=>{
+    if(dragging){ angleY+=(e.clientX-lastX)*0.01; angleX+=(e.clientY-lastY)*0.01; lastX=e.clientX; lastY=e.clientY; }
+  });
+  ['mouseup','mouseleave'].forEach(evt=>canvas.addEventListener(evt,()=>dragging=false));
+
+  canvas.addEventListener('touchstart',e=>{ dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; });
+  canvas.addEventListener('touchmove',e=>{
+    if(dragging){ angleY+=(e.touches[0].clientX-lastX)*0.01; angleX+=(e.touches[0].clientY-lastY)*0.01; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+  });
+  canvas.addEventListener('touchend',()=>dragging=false);
+
+  window.addEventListener('resize',()=>{ W=innerWidth; H=innerHeight; canvas.width=W; canvas.height=H; });
+</script>
+</body>
+</html>
