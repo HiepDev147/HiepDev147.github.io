@@ -3,32 +3,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Device Fingerprint Demo</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p1Cmj0++YlYk1X0twI6YV8G+0xkHfMGFzV+zV9OyGLN+5kqYxZC8l9z0L9JobpTt9pI6+I0zKpQ1GsN63Yk+AA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #333; display: flex; align-items: center; justify-content: center; height: 100vh; }
     .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 2rem; width: 380px; text-align: center; }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    button { background: #0069d9; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; }
+    h1 i { margin-right: 0.5rem; color: #0069d9; }
+    button { background: #0069d9; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; }
+    button i { margin-right: 0.5rem; }
     button:hover { background: #0053a6; }
     #result { margin-top: 1rem; text-align: left; background: #f0f2f5; padding: 1rem; border-radius: 8px; word-break: break-all; max-height: 350px; overflow-y: auto; font-family: monospace; }
     .short-id { font-weight: bold; color: #0069d9; }
+    details summary { cursor: pointer; font-weight: bold; }
+    details summary::marker { display: none; }
+    details summary i { margin-right: 0.5rem; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Fingerprint Generator</h1>
-    <button id="gen-btn">Generate ID</button>
+    <h1><i class="fa-solid fa-fingerprint"></i>Fingerprint Generator</h1>
+    <button id="gen-btn"><i class="fa-solid fa-rotate-right"></i>Generate ID</button>
     <div id="result">Chưa có dữ liệu</div>
   </div><script type="module">
 const SHORT_LEN = 16;
 const truncate = hash => hash.slice(0, SHORT_LEN);
 
-// Sắp xếp key để JSON ổn định
 function stableStringify(obj) {
   if (obj && typeof obj === 'object') {
-    if (Array.isArray(obj)) {
-      return '[' + obj.map(stableStringify).join(',') + ']';
-    }
+    if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
     const keys = Object.keys(obj).sort();
     return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
   }
@@ -41,7 +45,6 @@ async function sha256(input) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Tính năng tĩnh
 function getStaticInfo() {
   return {
     ua: navigator.userAgent,
@@ -96,14 +99,14 @@ async function collectFingerprint() {
 }
 
 document.getElementById('gen-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('gen-btn'); btn.textContent = 'Loading...'; btn.disabled = true;
+  const btn = document.getElementById('gen-btn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Loading...'; btn.disabled = true;
   const data = await collectFingerprint();
   const json = stableStringify(data);
   const fullHash = await sha256(json);
   const id = truncate(fullHash);
   document.getElementById('result').innerHTML =
     `<div>ID: <span class='short-id'>${id}</span></div>` +
-    `<details><summary>Chi tiết</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;btn.textContent = 'Generate ID'; btn.disabled = false; }); </script>
+    `<details><summary><i class='fa-solid fa-info-circle'></i>Chi tiết</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i>Generate ID'; btn.disabled = false; }); </script>
 
 </body>
 </html>
