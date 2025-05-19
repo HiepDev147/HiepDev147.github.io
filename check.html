@@ -1,112 +1,50 @@
-<!DOCTYPE html><html lang="vi">
+<!DOCTYPE html>
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Device Fingerprint Demo</title>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p1Cmj0++YlYk1X0twI6YV8G+0xkHfMGFzV+zV9OyGLN+5kqYxZC8l9z0L9JobpTt9pI6+I0zKpQ1GsN63Yk+AA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>Fingerprint Generator</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #333; display: flex; align-items: center; justify-content: center; height: 100vh; }
-    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 2rem; width: 380px; text-align: center; }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; }
-    h1 i { margin-right: 0.5rem; color: #0069d9; }
-    button { background: #0069d9; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; }
-    button i { margin-right: 0.5rem; }
-    button:hover { background: #0053a6; }
-    #result { margin-top: 1rem; text-align: left; background: #f0f2f5; padding: 1rem; border-radius: 8px; word-break: break-all; max-height: 350px; overflow-y: auto; font-family: monospace; }
-    .short-id { font-weight: bold; color: #0069d9; }
-    details summary { cursor: pointer; font-weight: bold; }
-    details summary::marker { display: none; }
-    details summary i { margin-right: 0.5rem; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 40px;
+      text-align: center;
+    }
+    h1 { color: #333; }
+    #fp {
+      margin-top: 20px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      display: inline-block;
+      min-width: 300px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1><i class="fa-solid fa-fingerprint"></i>Fingerprint Generator</h1>
-    <button id="gen-btn"><i class="fa-solid fa-rotate-right"></i>Generate ID</button>
-    <div id="result">Chưa có dữ liệu</div>
-  </div><script type="module">
-const SHORT_LEN = 16;
-const truncate = hash => hash.slice(0, SHORT_LEN);
+  <h1>Fingerprint Generator</h1>
+  <p>Click nút bên dưới để tạo fingerprint:</p>
+  <button onclick="generateFingerprint()">Tạo Fingerprint</button>
+  <div id="fp">Fingerprint sẽ hiển thị tại đây</div>
 
-function stableStringify(obj) {
-  if (obj && typeof obj === 'object') {
-    if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
-    const keys = Object.keys(obj).sort();
-    return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
-  }
-  return JSON.stringify(obj);
-}
+  <script>
+    async function generateFingerprint() {
+      const fpPromise = import('https://fpjscdn.net/v3/sXSSDt1OM6yT1YVGdaqB')
+        .then(FingerprintJS => FingerprintJS.load());
 
-async function sha256(input) {
-  const buf = new TextEncoder().encode(input);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function getStaticInfo() {
-  return {
-    ua: navigator.userAgent,
-    lang: navigator.language,
-    platform: navigator.platform,
-    cores: navigator.hardwareConcurrency,
-    ram: navigator.deviceMemory,
-    dnt: navigator.doNotTrack,
-    webglSupported: !!window.WebGLRenderingContext,
-    screen: `${screen.width}x${screen.height}`,
-    pixelRatio: window.devicePixelRatio,
-    colorDepth: screen.colorDepth,
-    tz: Intl.DateTimeFormat().resolvedOptions().timeZone
-  };
-}
-
-function getPlugins() {
-  return Array.from(navigator.plugins).map(p => p.name).sort();
-}
-
-function getMimeTypes() {
-  return Array.from(navigator.mimeTypes).map(m => m.type).sort();
-}
-
-function getWebGLExtensions() {
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl');
-    if (!gl) return [];
-    return gl.getSupportedExtensions().sort();
-  } catch {
-    return [];
-  }
-}
-
-function getCodecs() {
-  const v = document.createElement('video');
-  return {
-    mp4: v.canPlayType('video/mp4; codecs="avc1.42E01E"'),
-    webm: v.canPlayType('video/webm; codecs="vp8, vorbis"'),
-    ogg: v.canPlayType('video/ogg; codecs="theora"')
-  };
-}
-
-async function collectFingerprint() {
-  const fp = getStaticInfo();
-  fp.plugins = getPlugins();
-  fp.mimes = getMimeTypes();
-  fp.webglExt = getWebGLExtensions();
-  fp.codecs = getCodecs();
-  return fp;
-}
-
-document.getElementById('gen-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('gen-btn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>Loading...'; btn.disabled = true;
-  const data = await collectFingerprint();
-  const json = stableStringify(data);
-  const fullHash = await sha256(json);
-  const id = truncate(fullHash);
-  document.getElementById('result').innerHTML =
-    `<div>ID: <span class='short-id'>${id}</span></div>` +
-    `<details><summary><i class='fa-solid fa-info-circle'></i>Chi tiết</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i>Generate ID'; btn.disabled = false; }); </script>
-
+      fpPromise
+        .then(fp => fp.get())
+        .then(result => {
+          const visitorId = result.visitorId;
+          console.log("Fingerprint:", visitorId);
+          document.getElementById('fp').innerText = "Fingerprint: " + visitorId;
+        })
+        .catch(err => {
+          console.error("Lỗi tạo fingerprint:", err);
+          document.getElementById('fp').innerText = "Lỗi khi tạo fingerprint.";
+        });
+    }
+  </script>
 </body>
 </html>
