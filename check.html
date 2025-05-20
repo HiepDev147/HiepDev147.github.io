@@ -2,49 +2,465 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Fingerprint Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Fingerprint Demo</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 40px;
-      text-align: center;
-    }
-    h1 { color: #333; }
-    #fp {
-      margin-top: 20px;
-      padding: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      display: inline-block;
-      min-width: 300px;
-      font-weight: bold;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #333; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 2rem; width: 420px; text-align: center; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    button { background: #0069d9; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto; }
+    button:hover { background: #0053a6; }
+    button:disabled { background: #7aa6d8; cursor: not-allowed; }
+    #result { margin-top: 1rem; text-align: left; background: #f0f2f5; padding: 1rem; border-radius: 8px; word-break: break-all; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.9rem; }
+    .short-id { font-weight: bold; color: #0069d9; font-size: 1.1rem; }
+    details { margin-top: 1rem; }
+    summary { cursor: pointer; margin-bottom: 0.5rem; font-weight: bold; }
+    pre { white-space: pre-wrap; }
+    .info-group { margin-top: 0.5rem; border-left: 3px solid #0069d9; padding-left: 8px; }
+    .copy-btn { background: #eee; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 0.8rem; margin-left: 8px; }
+    .copy-btn:hover { background: #ddd; }
+    .status { font-size: 0.9rem; color: #666; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
-  <h1>Fingerprint Generator</h1>
-  <p>Click nút bên dưới để tạo fingerprint:</p>
-  <button onclick="generateFingerprint()">Tạo Fingerprint</button>
-  <div id="fp">Fingerprint sẽ hiển thị tại đây</div>
+  <div class="card">
+    <h1><i class="fas fa-fingerprint"></i> Fingerprint Generator</h1>
+    <button id="gen-btn"><i class="fas fa-sync-alt"></i> Generate ID</button>
+    <p class="status" id="status"></p>
+    <div id="result">Chưa có dữ liệu</div>
+  </div>
 
   <script>
-    async function generateFingerprint() {
-      const fpPromise = import('https://fpjscdn.net/v3/sXSSDt1OM6yT1YVGdaqB')
-        .then(FingerprintJS => FingerprintJS.load());
-
-      fpPromise
-        .then(fp => fp.get())
-        .then(result => {
-          const visitorId = result.visitorId;
-          console.log("Fingerprint:", visitorId);
-          document.getElementById('fp').innerText = "Fingerprint: " + visitorId;
-        })
-        .catch(err => {
-          console.error("Lỗi tạo fingerprint:", err);
-          document.getElementById('fp').innerText = "Lỗi khi tạo fingerprint.";
-        });
+    const SHORT_LEN = 16;
+    const truncate = hash => hash.slice(0, SHORT_LEN);
+    
+    // Sắp xếp key để JSON ổn định
+    function stableStringify(obj) {
+      if (obj && typeof obj === 'object') {
+        if (Array.isArray(obj)) {
+          return '[' + obj.map(stableStringify).join(',') + ']';
+        }
+        const keys = Object.keys(obj).sort();
+        return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+      }
+      return JSON.stringify(obj);
     }
+
+    async function sha256(input) {
+      const buf = new TextEncoder().encode(input);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Chuẩn hóa múi giờ
+    function normalizeTimeZone(tz) {
+      if (!tz) return 'unknown';
+      // Xử lý Asia/Saigon và Asia/HoChiMinh là cùng một múi giờ
+      if (tz === 'Asia/Saigon' || tz === 'Asia/Ho_Chi_Minh' || tz === 'Asia/HoChiMinh') {
+        return 'Asia/Ho_Chi_Minh';
+      }
+      return tz;
+    }
+
+    // Tính năng tĩnh
+    function getStaticInfo() {
+  let tz;
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }
+  catch { tz = 'unknown'; }
+  
+  return {
+    ua: navigator.userAgent || 'unknown',
+    platform: navigator.platform || 'unknown',
+    lang: navigator.language || 'unknown',
+    // CHỈ LẤY PHẦN TỬ ĐẦU TIÊN
+    languages: [(navigator.languages && navigator.languages[0]) || navigator.language || 'unknown'],
+    platform: navigator.platform || 'unknown',
+    cores: navigator.hardwareConcurrency || 'unknown',
+    ram: navigator.deviceMemory || 'unknown',
+    dnt: navigator.doNotTrack || null,
+    cookieEnabled: navigator.cookieEnabled,
+    webglSupported: !!window.WebGLRenderingContext,
+    screen: `${screen.width}x${screen.height}`,
+    pixelRatio: window.devicePixelRatio || 1,
+    colorDepth: screen.colorDepth || 0,
+    timezone: {
+      name: normalizeTimeZone(tz),
+      offset: new Date().getTimezoneOffset(),
+      dst: detectDST()
+    }
+  };
+}
+
+    function detectDST() {
+      try {
+        const jan = new Date(new Date().getFullYear(), 0, 1).getTimezoneOffset();
+        const jul = new Date(new Date().getFullYear(), 6, 1).getTimezoneOffset();
+        return Math.max(jan, jul) !== Math.min(jan, jul);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function getPlugins() {
+      try {
+        if (!navigator.plugins || navigator.plugins.length === 0) {
+          return [];
+        }
+        
+        return Array.from(navigator.plugins).map(p => ({
+          name: p.name || '',
+          description: p.description || '',
+          filename: p.filename || ''
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function getMimeTypes() {
+      try {
+        if (!navigator.mimeTypes || navigator.mimeTypes.length === 0) {
+          return [];
+        }
+        
+        return Array.from(navigator.mimeTypes).map(m => ({
+          type: m.type || '',
+          description: m.description || '',
+          suffixes: m.suffixes || ''
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+
+    // Cải tiến phát hiện WebGL và các phần mở rộng
+    function getWebGLInfo() {
+      try {
+        const canvas = document.createElement('canvas');
+        let gl = null;
+        
+        try {
+          gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        } catch (e) {
+          return { supported: false, error: 'WebGL initialization failed' };
+        }
+        
+        if (!gl) {
+          return { supported: false, extensions: [], renderer: null, vendor: null };
+        }
+        
+        let extensions = [];
+        try {
+          extensions = (gl.getSupportedExtensions() || []).sort();
+        } catch (e) {
+          extensions = [];
+        }
+        
+        let vendor = null;
+        let renderer = null;
+        
+        try {
+          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || null;
+            renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || null;
+          }
+        } catch (e) {
+          // Một số trình duyệt có thể giới hạn thông tin này
+        }
+        
+        // Kiểm tra WebGL2
+        let webgl2Supported = false;
+        let extensions2 = [];
+        
+        try {
+          const gl2 = canvas.getContext('webgl2');
+          webgl2Supported = !!gl2;
+          
+          if (webgl2Supported && gl2) {
+            try {
+              extensions2 = (gl2.getSupportedExtensions() || []).sort();
+            } catch (e) {
+              extensions2 = [];
+            }
+          }
+        } catch (e) {
+          webgl2Supported = false;
+        }
+        
+        return {
+          supported: true,
+          webgl2: webgl2Supported,
+          vendor,
+          renderer,
+          extensions,
+          extensions2: webgl2Supported ? extensions2 : []
+        };
+      } catch (e) {
+        return { supported: false, error: e.message };
+      }
+    }
+
+    function getCodecs() {
+      const audio = document.createElement('audio');
+      const video = document.createElement('video');
+      
+      const safeCanPlayType = (element, type) => {
+        try {
+          return element.canPlayType(type) || '';
+        } catch (e) {
+          return '';
+        }
+      };
+      
+      return {
+        audio: {
+          mp3: safeCanPlayType(audio, 'audio/mpeg'),
+          wav: safeCanPlayType(audio, 'audio/wav'),
+          ogg: safeCanPlayType(audio, 'audio/ogg'),
+          aac: safeCanPlayType(audio, 'audio/aac'),
+          flac: safeCanPlayType(audio, 'audio/flac')
+        },
+        video: {
+          mp4: safeCanPlayType(video, 'video/mp4; codecs="avc1.42E01E"'),
+          webm: safeCanPlayType(video, 'video/webm; codecs="vp8, vorbis"'),
+          ogg: safeCanPlayType(video, 'video/ogg; codecs="theora"'),
+          h265: safeCanPlayType(video, 'video/mp4; codecs="hev1.1.6.L93.B0"'),
+          av1: safeCanPlayType(video, 'video/mp4; codecs="av01.0.08M.08"')
+        }
+      };
+    }
+
+    // Kiểm tra tính năng trình duyệt
+    function getFeatureSupport() {
+      return {
+        pdfViewer: typeof navigator.pdfViewerEnabled !== 'undefined' ? navigator.pdfViewerEnabled : false,
+        touch: 'ontouchstart' in window || (navigator.maxTouchPoints > 0),
+        bluetooth: typeof navigator.bluetooth !== 'undefined',
+        clipboard: typeof navigator.clipboard !== 'undefined',
+        share: typeof navigator.share !== 'undefined',
+        credentials: typeof navigator.credentials !== 'undefined',
+        geolocation: typeof navigator.geolocation !== 'undefined',
+        payment: typeof window.PaymentRequest !== 'undefined',
+        serviceWorker: typeof navigator.serviceWorker !== 'undefined',
+        webrtc: typeof window.RTCPeerConnection !== 'undefined',
+        webxr: typeof navigator.xr !== 'undefined',
+        webauthn: typeof navigator.credentials !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined',
+        mediaDevices: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+      };
+    }
+    
+    function getBrowserExtensionHints() {
+      // Chrome, Edge, Opera, Firefox
+      const hints = {
+        detected: []
+      };
+      
+      // Kiểm tra một số phần mở rộng phổ biến
+      if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined') {
+        hints.detected.push('React DevTools');
+      }
+      
+      if (typeof window.__REDUX_DEVTOOLS_EXTENSION__ !== 'undefined') {
+        hints.detected.push('Redux DevTools');
+      }
+      
+      if (window.devToolsExtension || window.__REDUX_DEVTOOLS_EXTENSION__) {
+        hints.detected.push('Development Tools');
+      }
+      
+      // Kiểm tra dấu hiệu của Ad Blocker một cách an toàn
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'ads-banner-test';
+        testDiv.style.display = 'none';
+        testDiv.className = 'ads ad adsbox doubleclick ad-placement carbon-ads';
+        document.body.appendChild(testDiv);
+        
+        setTimeout(() => {
+          try {
+            if (window.getComputedStyle(testDiv).display === 'none' || !testDiv.offsetHeight) {
+              // Nếu phát hiện Ad Blocker, thêm vào hints
+              if (!hints.detected.includes('Ad Blocker')) {
+                hints.detected.push('Ad Blocker');
+              }
+            }
+            // Luôn xóa div test để tránh lỗi
+            if (testDiv && testDiv.parentNode) {
+              testDiv.parentNode.removeChild(testDiv);
+            }
+          } catch (e) {
+            // Xử lý lỗi khi kiểm tra
+            console.error('Error checking ad blocker:', e);
+          }
+        }, 100);
+      } catch (e) {
+        console.error('Error during extension detection:', e);
+      }
+      
+      return hints;
+    }
+
+    async function collectFingerprint() {
+      const status = document.getElementById('status');
+      
+      status.innerText = 'Đang thu thập thông tin thiết bị...';
+      
+      // Thêm độ trễ nhỏ để giao diện cập nhật
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const fp = getStaticInfo();
+      fp.bowser    = getBowserInfo(); 
+      fp.plugins = getPlugins();
+      fp.mimes = getMimeTypes();
+      fp.webgl = getWebGLInfo();
+      fp.codecs = getCodecs();
+      fp.features = getFeatureSupport();
+      fp.extensions = getBrowserExtensionHints();
+      fp.sensors = getSensorSupport(); 
+      
+      status.innerText = 'Đang tạo mã định danh...';
+      
+      return fp;
+    }
+
+    // Xử lý sự kiện copy
+    function copyToClipboard(text) {
+      try {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            // Có thể thêm thông báo thành công
+          })
+          .catch(err => {
+            console.error('Không thể sao chép: ', err);
+            // Fallback cho các trình duyệt không hỗ trợ
+            fallbackCopy(text);
+          });
+      } catch (e) {
+        fallbackCopy(text);
+      }
+    }
+    
+    function fallbackCopy(text) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';  // Tránh làm cuộn trang
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch (e) {
+        console.error('Fallback copy failed:', e);
+      }
+    }
+
+    document.getElementById('gen-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('gen-btn');
+      const status = document.getElementById('status');
+      const result = document.getElementById('result');
+      
+      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Đang xử lý...';
+      btn.disabled = true;
+      result.innerHTML = 'Đang thu thập dữ liệu...';
+      
+      try {
+        const data = await collectFingerprint();
+        const json = stableStringify(data);
+        const fullHash = await sha256(json);
+        const id = truncate(fullHash);
+        
+        // Tạo HTML cho kết quả
+        let resultHTML = `
+          <div>ID: <span class='short-id'>${id}</span> <button class="copy-btn" id="copy-id-btn"><i class="fas fa-copy"></i> Copy</button></div>
+          <div class="info-group">
+            <i class="fas fa-globe"></i> Trình duyệt: ${data.ua.split(' ').slice(-1)[0] || 'Unknown'}
+            <br><i class="fas fa-language"></i> Ngôn ngữ: ${data.lang || 'Unknown'}
+            <br><i class="fas fa-desktop"></i> Màn hình: ${data.screen || 'Unknown'}
+            <br><i class="fas fa-clock"></i> Múi giờ: ${data.timezone.name || 'Unknown'} (GMT${formatTimezoneOffset(data.timezone.offset)})
+          </div>
+          <details>
+            <summary><i class="fas fa-info-circle"></i> Chi tiết thiết bị</summary>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </details>`;
+          
+        result.innerHTML = resultHTML;
+        
+        // Thêm sự kiện sao chép sau khi đã thêm nút vào DOM
+        document.getElementById('copy-id-btn').addEventListener('click', function() {
+          copyToClipboard(id);
+          this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+          setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-copy"></i> Copy';
+          }, 2000);
+        });
+        
+        status.innerHTML = `<i class="fas fa-check-circle"></i> Đã tạo thành công!`;
+      } catch (error) {
+        console.error("Error generating fingerprint:", error);
+        result.innerHTML = `<div style="color: red;"><i class="fas fa-exclamation-triangle"></i> Lỗi: ${error.message || 'Không xác định'}</div>`;
+        status.innerHTML = `<i class="fas fa-times-circle"></i> Đã xảy ra lỗi!`;
+      } finally {
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Generate ID';
+        btn.disabled = false;
+      }
+    });
+    
+    function formatTimezoneOffset(offset) {
+      if (typeof offset !== 'number') {
+        return '+00:00';
+      }
+      
+      const sign = offset <= 0 ? '+' : '-';
+      const absOffset = Math.abs(offset);
+      const hours = Math.floor(absOffset / 60);
+      const minutes = absOffset % 60;
+      return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+    function getSensorSupport() {
+  return {
+    battery: !!navigator.getBattery,
+    network: !!navigator.connection,
+    mediaDevices: !!navigator.mediaDevices?.enumerateDevices,
+    permissions: !!navigator.permissions,
+    deviceMotion: 'DeviceMotionEvent' in window,
+    deviceOrientation: 'DeviceOrientationEvent' in window,
+    ambientLight: 'AmbientLightSensor' in window,
+    proximity: 'ProximitySensor' in window,
+    bluetooth: !!navigator.bluetooth,
+    usb: !!navigator.usb,
+    midi: !!navigator.requestMIDIAccess,
+    payment: !!window.PaymentRequest,
+    webauthn: !!window.PublicKeyCredential,
+    storageManager: !!navigator.storage?.estimate,
+
+    clipboard: !!navigator.clipboard,
+    xr: !!navigator.xr,
+    webgpu: !!navigator.gpu,
+    wakeLock: !!navigator.wakeLock,
+    screenOrientation: !!screen.orientation,
+    idleDetector: !!navigator.idleDetector,
+    serviceWorkerSync: 'SyncManager' in window,
+    performanceObserver: !!window.PerformanceObserver
+  };
+}
+function getBowserInfo() {
+  try {
+    // bowser có export Bowser toàn cục khi dùng ES5 build
+    const parser = bowser.getParser(window.navigator.userAgent);
+    return {
+      name: parser.getBrowserName(),      // ví dụ: Chrome, Firefox…
+      version: parser.getBrowserVersion(),// ví dụ: “114.0.5735.199”
+      os: parser.getOSName(),             // ví dụ: Windows, macOS…
+      osVersion: parser.getOSVersion()    // ví dụ: “10.0”
+    };
+  } catch (e) {
+    return { name: 'unknown', version: 'unknown', os: 'unknown', osVersion: 'unknown' };
+  }
+}
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bowser@2.11.0/es5.min.js"></script>
 </body>
 </html>
