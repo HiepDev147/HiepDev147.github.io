@@ -204,34 +204,52 @@
     }
 
     function getCodecs() {
-      const audio = document.createElement('audio');
-      const video = document.createElement('video');
-      
-      const safeCanPlayType = (element, type) => {
-        try {
-          return element.canPlayType(type) || '';
-        } catch (e) {
-          return '';
-        }
-      };
-      
-      return {
-        audio: {
-          mp3: safeCanPlayType(audio, 'audio/mpeg'),
-          wav: safeCanPlayType(audio, 'audio/wav'),
-          ogg: safeCanPlayType(audio, 'audio/ogg'),
-          aac: safeCanPlayType(audio, 'audio/aac'),
-          flac: safeCanPlayType(audio, 'audio/flac')
-        },
-        video: {
-          mp4: safeCanPlayType(video, 'video/mp4; codecs="avc1.42E01E"'),
-          webm: safeCanPlayType(video, 'video/webm; codecs="vp8, vorbis"'),
-          ogg: safeCanPlayType(video, 'video/ogg; codecs="theora"'),
-          h265: safeCanPlayType(video, 'video/mp4; codecs="hev1.1.6.L93.B0"'),
-          av1: safeCanPlayType(video, 'video/mp4; codecs="av01.0.08M.08"')
-        }
-      };
+  const audio = document.createElement('audio');
+  const video = document.createElement('video');
+  const canvas = document.createElement('canvas');
+  
+  const safeCanPlayType = (el, type) => {
+    try { return el.canPlayType(type) || ''; }
+    catch (e) { return ''; }
+  };
+  
+  const supportsImage = (format) => {
+    if (!canvas.getContext) return false;
+    // vẽ tí xíu, ko cần hiển thị
+    const data = canvas.toDataURL(`image/${format}`);
+    return data.indexOf(`data:image/${format}`) === 0;
+  };
+  
+  return {
+    audio: {
+      mp3: safeCanPlayType(audio, 'audio/mpeg'),
+      wav: safeCanPlayType(audio, 'audio/wav'),
+      ogg: safeCanPlayType(audio, 'audio/ogg'),
+      aac: safeCanPlayType(audio, 'audio/aac'),
+      flac: safeCanPlayType(audio, 'audio/flac'),
+      // thêm:
+      webm: safeCanPlayType(audio, 'audio/webm'),
+      opus: safeCanPlayType(audio, 'audio/ogg; codecs="opus"')
+    },
+    video: {
+      mp4: safeCanPlayType(video, 'video/mp4; codecs="avc1.42E01E"'),
+      webm: safeCanPlayType(video, 'video/webm; codecs="vp8, vorbis"'),
+      ogg: safeCanPlayType(video, 'video/ogg; codecs="theora"'),
+      h265: safeCanPlayType(video, 'video/mp4; codecs="hev1.1.6.L93.B0"'),
+      av1: safeCanPlayType(video, 'video/mp4; codecs="av01.0.08M.08"'),
+      // thêm:
+      mkv: safeCanPlayType(video, 'video/x-matroska; codecs="avc1"'),
+      mov: safeCanPlayType(video, 'video/quicktime')
+    },
+    image: {
+      jpeg: supportsImage('jpeg'),
+      png: supportsImage('png'),
+      gif: supportsImage('gif'),
+      webp: supportsImage('webp'),
+      bmp: supportsImage('bmp')
     }
+  };
+}
 
     // Kiểm tra tính năng trình duyệt
     function getFeatureSupport() {
@@ -241,6 +259,7 @@
         bluetooth: typeof navigator.bluetooth !== 'undefined',
         clipboard: typeof navigator.clipboard !== 'undefined',
         share: typeof navigator.share !== 'undefined',
+        fullscreen: typeof document.fullscreenEnabled !== 'undefined' && document.fullscreenEnabled,
         credentials: typeof navigator.credentials !== 'undefined',
         geolocation: typeof navigator.geolocation !== 'undefined',
         payment: typeof window.PaymentRequest !== 'undefined',
@@ -436,7 +455,7 @@
     webauthn: !!window.PublicKeyCredential,
     storageManager: !!navigator.storage?.estimate,
 
-    clipboard: !!navigator.clipboard,
+
     xr: !!navigator.xr,
     webgpu: !!navigator.gpu,
     wakeLock: !!navigator.wakeLock,
