@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Speed Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .test-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .test-description {
+            margin-bottom: 20px;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .test-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .test-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            max-width: 100%;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .gpu-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 GPU Speed Test</h1>
+            <p>Test your graphics performance with comprehensive WebGL benchmarks</p>
+        </div>
+
+        <div class="gpu-info">
+            <h2>System Information</h2>
+            <div class="info-grid" id="systemInfo">
+                <div class="info-item loading">
+                    <div class="info-label">Detecting GPU...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <div class="test-card">
+                <h3 class="test-title">🎯 Triangle Rendering Test</h3>
+                <p class="test-description">Measures raw triangle rendering performance by drawing thousands of triangles per frame.</p>
+                <button class="test-button" onclick="runTriangleTest()">Start Triangle Test</button>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="triangleProgress"></div>
+                </div>
+                <div class="result-display" id="triangleResult">Click to start test</div>
+            </div>
+
+            <div class="test-card">
+                <h3 class="test-title">🌊 Particle System Test</h3>
+                <p class="test-description">Tests complex particle simulation and animation performance with physics calculations.</p>
+                <button class="test-button" onclick="runParticleTest()">Start Particle Test</button>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="particleProgress"></div>
+                </div>
+                <div class="result-display" id="particleResult">Click to start test</div>
+                <div class="canvas-container">
+                    <canvas id="particleCanvas" width="300" height="200"></canvas>
+                </div>
+            </div>
+
+            <div class="test-card">
+                <h3 class="test-title">🎨 Shader Complexity Test</h3>
+                <p class="test-description">Evaluates GPU shader processing power with complex fragment shader calculations.</p>
+                <button class="test-button" onclick="runShaderTest()">Start Shader Test</button>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="shaderProgress"></div>
+                </div>
+                <div class="result-display" id="shaderResult">Click to start test</div>
+            </div>
+
+            <div class="test-card">
+                <h3 class="test-title">📊 Overall GPU Score</h3>
+                <p class="test-description">Combined performance score based on all test results and system capabilities.</p>
+                <button class="test-button" onclick="calculateOverallScore()">Calculate Score</button>
+                <div class="result-display" id="overallScore">Run tests to calculate score</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            triangles: null,
+            particles: null,
+            shaders: null
+        };
+
+        // Initialize system info
+        window.onload = function() {
+            detectSystemInfo();
+        };
+
+        function detectSystemInfo() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) {
+                document.getElementById('systemInfo').innerHTML = `
+                    <div class="info-item">
+                        <div class="info-label">Status</div>
+                        <div>WebGL not supported</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown';
+            const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown';
+            
+            document.getElementById('systemInfo').innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">GPU Vendor</div>
+                    <div>${vendor}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">GPU Renderer</div>
+                    <div>${renderer}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">WebGL Version</div>
+                    <div>${gl.getParameter(gl.VERSION)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Max Texture Size</div>
+                    <div>${gl.getParameter(gl.MAX_TEXTURE_SIZE)}px</div>
+                </div>
+            `;
+        }
+
+        function updateProgress(testName, progress) {
+            document.getElementById(testName + 'Progress').style.width = progress + '%';
+        }
+
+        async function runTriangleTest() {
+            const button = event.target;
+            const resultDiv = document.getElementById('triangleResult');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            resultDiv.innerHTML = 'Initializing triangle test...';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            const gl = canvas.getContext('webgl');
+
+            if (!gl) {
+                resultDiv.innerHTML = 'WebGL not supported';
+                button.disabled = false;
+                button.textContent = 'Start Triangle Test';
+                return;
+            }
+
+            // Vertex shader
+            const vertexShaderSource = `
+                attribute vec2 a_position;
+                attribute vec3 a_color;
+                varying vec3 v_color;
+                void main() {
+                    gl_Position = vec4(a_position, 0.0, 1.0);
+                    v_color = a_color;
+                }
+            `;
+
+            // Fragment shader
+            const fragmentShaderSource = `
+                precision mediump float;
+                varying vec3 v_color;
+                void main() {
+                    gl_FragColor = vec4(v_color, 1.0);
+                }
+            `;
+
+            const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
+            gl.useProgram(program);
+
+            // Create triangle data
+            const triangleCount = 10000;
+            const vertices = new Float32Array(triangleCount * 15); // 5 floats per vertex * 3 vertices per triangle
+            
+            for (let i = 0; i < triangleCount; i++) {
+                const offset = i * 15;
+                const x = (Math.random() - 0.5) * 2;
+                const y = (Math.random() - 0.5) * 2;
+                const size = 0.02;
+                const r = Math.random();
+                const g = Math.random();
+                const b = Math.random();
+
+                // Triangle vertices (position + color)
+                vertices[offset] = x; vertices[offset + 1] = y; vertices[offset + 2] = r; vertices[offset + 3] = g; vertices[offset + 4] = b;
+                vertices[offset + 5] = x + size; vertices[offset + 6] = y; vertices[offset + 7] = r; vertices[offset + 8] = g; vertices[offset + 9] = b;
+                vertices[offset + 10] = x; vertices[offset + 11] = y + size; vertices[offset + 12] = r; vertices[offset + 13] = g; vertices[offset + 14] = b;
+            }
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(program, 'a_position');
+            const colorLocation = gl.getAttribLocation(program, 'a_color');
+
+            gl.enableVertexAttribArray(positionLocation);
+            gl.enableVertexAttribArray(colorLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 5 * 4, 0);
+            gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 5 * 4, 2 * 4);
+
+            // Performance test
+            const frames = 60;
+            let frameCount = 0;
+            const startTime = performance.now();
+
+            function renderFrame() {
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLES, 0, triangleCount * 3);
+                
+                frameCount++;
+                updateProgress('triangle', (frameCount / frames) * 100);
+                
+                if (frameCount < frames) {
+                    requestAnimationFrame(renderFrame);
+                } else {
+                    const endTime = performance.now();
+                    const fps = 1000 / ((endTime - startTime) / frames);
+                    const trianglesPerSecond = (triangleCount * fps).toFixed(0);
+                    
+                    testResults.triangles = fps;
+                    resultDiv.innerHTML = `
+                        <div style="text-align: center;">
+                            <div class="score-display">${fps.toFixed(1)} FPS</div>
+                            <div>${trianglesPerSecond} triangles/sec</div>
+                        </div>
+                    `;
+                    
+                    button.disabled = false;
+                    button.textContent = 'Start Triangle Test';
+                }
+            }
+
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.clearColor(0, 0, 0, 1);
+            renderFrame();
+        }
+
+        async function runParticleTest() {
+            const button = event.target;
+            const resultDiv = document.getElementById('particleResult');
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            resultDiv.innerHTML = 'Initializing particle test...';
+
+            const particleCount = 1000;
+            const particles = [];
+
+            // Initialize particles
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    size: Math.random() * 3 + 1,
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
+                });
+            }
+
+            const frames = 120;
+            let frameCount = 0;
+            const startTime = performance.now();
+
+            function animateParticles() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(particle => {
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+
+                    // Bounce off walls
+                    if (particle.x <= 0 || particle.x >= canvas.width) particle.vx *= -1;
+                    if (particle.y <= 0 || particle.y >= canvas.height) particle.vy *= -1;
+
+                    // Draw particle
+                    ctx.fillStyle = particle.color;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                frameCount++;
+                updateProgress('particle', (frameCount / frames) * 100);
+
+                if (frameCount < frames) {
+                    requestAnimationFrame(animateParticles);
+                } else {
+                    const endTime = performance.now();
+                    const fps = 1000 / ((endTime - startTime) / frames);
+                    const particlesPerSecond = (particleCount * fps).toFixed(0);
+                    
+                    testResults.particles = fps;
+                    resultDiv.innerHTML = `
+                        <div style="text-align: center;">
+                            <div class="score-display">${fps.toFixed(1)} FPS</div>
+                            <div>${particlesPerSecond} particles/sec</div>
+                        </div>
+                    `;
+                    
+                    button.disabled = false;
+                    button.textContent = 'Start Particle Test';
+                }
+            }
+
+            animateParticles();
+        }
+
+        async function runShaderTest() {
+            const button = event.target;
+            const resultDiv = document.getElementById('shaderResult');
+            
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            resultDiv.innerHTML = 'Initializing shader test...';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const gl = canvas.getContext('webgl');
+
+            if (!gl) {
+                resultDiv.innerHTML = 'WebGL not supported';
+                button.disabled = false;
+                button.textContent = 'Start Shader Test';
+                return;
+            }
+
+            // Complex fragment shader
+            const vertexShaderSource = `
+                attribute vec2 a_position;
+                varying vec2 v_texCoord;
+                void main() {
+                    gl_Position = vec4(a_position, 0.0, 1.0);
+                    v_texCoord = (a_position + 1.0) / 2.0;
+                }
+            `;
+
+            const fragmentShaderSource = `
+                precision mediump float;
+                varying vec2 v_texCoord;
+                uniform float u_time;
+                
+                float noise(vec2 p) {
+                    return sin(p.x * 123.456 + p.y * 789.012) * 0.5 + 0.5;
+                }
+                
+                void main() {
+                    vec2 uv = v_texCoord;
+                    float t = u_time * 0.001;
+                    
+                    // Complex calculations
+                    float r = 0.0;
+                    for (int i = 0; i < 10; i++) {
+                        float fi = float(i);
+                        r += sin(uv.x * fi + t) * cos(uv.y * fi + t) * noise(uv * fi);
+                    }
+                    
+                    vec3 color = vec3(
+                        sin(r + t) * 0.5 + 0.5,
+                        sin(r + t + 2.0) * 0.5 + 0.5,
+                        sin(r + t + 4.0) * 0.5 + 0.5
+                    );
+                    
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `;
+
+            const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
+            gl.useProgram(program);
+
+            // Create quad
+            const vertices = new Float32Array([
+                -1, -1,
+                 1, -1,
+                -1,  1,
+                 1,  1
+            ]);
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(program, 'a_position');
+            const timeLocation = gl.getUniformLocation(program, 'u_time');
+
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.
