@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera App - Edge Detection (Optimized)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .camera-view {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #video {
+            display: none;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 30px;
+        }
+
+        .control-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .capture-button {
+            width: 70px;
+            height: 70px;
+            border: 4px solid white;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .capture-button:hover {
+            transform: scale(1.1);
+        }
+
+        .capture-button:active {
+            transform: scale(0.95);
+        }
+
+        .capture-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .top-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 30px;
+            z-index: 10;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 20px;
+        }
+
+        .mode-item {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .mode-item.active {
+            color: #ffcc00;
+        }
+
+        .settings-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .flash-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .flash-indicator.active {
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        .filter-info {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .gallery-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid white;
+            background: #333;
+            overflow: hidden;
+        }
+
+        .gallery-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .performance-info {
+            position: absolute;
+            top: 140px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-family: monospace;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="camera-container">
+        <div class="flash-indicator" id="flashIndicator"></div>
+        
+        <div class="top-controls">
+            <div class="mode-selector">
+                <div class="mode-item">VIDEO</div>
+                <div class="mode-item active">PHOTO</div>
+                <div class="mode-item">PORTRAIT</div>
+            </div>
+            <button class="settings-button">⚙️</button>
+        </div>
+
+        <div class="filter-info">
+            Edge Detection Filter (Web Worker Optimized)
+        </div>
+
+        <div class="performance-info" id="performanceInfo">
+            FPS: --<br>
+            Processing: --ms
+        </div>
+
+        <div class="camera-view">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="camera-controls">
+            <div class="gallery-preview">
+                <img id="lastPhoto" src="" alt="" style="display: none;">
+            </div>
+            
+            <button class="capture-button" id="captureBtn"></button>
+            
+            <button class="control-button" id="flipBtn">🔄</button>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const captureBtn = document.getElementById('captureBtn');
+        const flipBtn = document.getElementById('flipBtn');
+        const flashIndicator = document.getElementById('flashIndicator');
+        const lastPhoto = document.getElementById('lastPhoto');
+        const performanceInfo = document.getElementById('performanceInfo');
+
+        let currentStream = null;
+        let facingMode = 'environment';
+        let worker = null;
+        let isProcessing = false;
+        let frameQueue = [];
+        let lastFrameTime = 0;
+        let frameCount = 0;
+        let fpsCounter = 0;
+
+        // Create Web Worker for edge detection
+        function createWorker() {
+            const workerCode = `
+                // Edge detection worker
+                function applyEdgeDetection(imageData) {
+                    const data = imageData.data;
+                    const width = imageData.width;
+                    const height = imageData.height;
+                    const output = new Uint8ClampedArray(data.length);
+
+                    // Sobel edge detection kernel
+                    const sobelX = [
+                        [-1, 0, 1],
+                        [-2, 0, 2],
+                        [-1, 0, 1]
+                    ];
+
+                    const sobelY = [
+                        [-1, -2, -1],
+                        [0, 0, 0],
+                        [1, 2, 1]
+                    ];
+
+                    // Pre-calculate grayscale values for better performance
+                    const grayData = new Float32Array(width * height);
+                    for (let i = 0; i < data.length; i += 4) {
+                        const idx = i / 4;
+                        grayData[idx] = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    }
+
+                    for (let y = 1; y < height - 1; y++) {
+                        for (let x = 1; x < width - 1; x++) {
+                            let gx = 0, gy = 0;
+
+                            // Apply Sobel kernels
+                            for (let ky = -1; ky <= 1; ky++) {
+                                for (let kx = -1; kx <= 1; kx++) {
+                                    const idx = (y + ky) * width + (x + kx);
+                                    const gray = grayData[idx];
+                                    
+                                    gx += gray * sobelX[ky + 1][kx + 1];
+                                    gy += gray * sobelY[ky + 1][kx + 1];
+                                }
+                            }
+
+                            const magnitude = Math.sqrt(gx * gx + gy * gy);
+                            const idx = (y * width + x) * 4;
+                            
+                            // Create edge effect with optimized threshold
+                            if (magnitude > 25) {
+                                // Black edges
+                                output[idx] = 0;
+                                output[idx + 1] = 0;
+                                output[idx + 2] = 0;
+                            } else {
+                                // White background
+                                output[idx] = 255;
+                                output[idx + 1] = 255;
+                                output[idx + 2] = 255;
+                            }
+                            output[idx + 3] = 255;
+                        }
+                    }
+
+                    return new ImageData(output, width, height);
+                }
+
+                self.onmessage = function(e) {
+                    const { imageData, timestamp } = e.data;
+                    const startTime = performance.now();
+                    
+                    try {
+                        const processedData = applyEdgeDetection(imageData);
+                        const processingTime = performance.now() - startTime;
+                        
+                        self.postMessage({
+                            processedData,
+                            timestamp,
+                            processingTime
+                        });
+                    } catch (error) {
+                        self.postMessage({
+                            error: error.message,
+                            timestamp
+                        });
+                    }
+                };
+            `;
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            return new Worker(URL.createObjectURL(blob));
+        }
+
+        // Initialize camera
+        async function initCamera() {
+            try {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                const constraints = {
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    // Create worker
+                    if (worker) {
+                        worker.terminate();
+                    }
+                    worker = createWorker();
+                    worker.onmessage = handleWorkerMessage;
+                    
+                    startProcessing();
+                });
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
+            }
+        }
+
+        // Handle worker response
+        function handleWorkerMessage(e) {
+            const { processedData, timestamp, processingTime, error } = e.data;
+            
+            if (error) {
+                console.error('Worker error:', error);
+                return;
+            }
+
+            // Update performance info
+            updatePerformanceInfo(processingTime);
+            
+            // Draw processed frame
+            ctx.putImageData(processedData, 0, 0);
+            
+            isProcessing = false;
+            
+            // Process next frame if available
+            if (frameQueue.length > 0) {
+                const nextFrame = frameQueue.shift();
+                processFrame(nextFrame);
+            }
+        }
+
+        // Update performance information
+        function updatePerformanceInfo(processingTime) {
+            const now = performance.now();
+            frameCount++;
+            
+            if (now - lastFrameTime >= 1000) {
+                fpsCounter = Math.round((frameCount * 1000) / (now - lastFrameTime));
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+            
+            performanceInfo.innerHTML = `FPS: ${fpsCounter}<br>Processing: ${Math.round(processingTime)}ms`;
+        }
+
+        // Process frame with worker
+        function processFrame(imageData) {
+            if (isProcessing) {
+                // Add to queue if worker is busy
+                if (frameQueue.length < 2) { // Limit queue size
+                    frameQueue.push(imageData);
+                }
+                return;
+            }
+            
+            isProcessing = true;
+            worker.postMessage({
+                imageData,
+                timestamp: performance.now()
+            });
+        }
+
+        // Start processing with optimized frame rate
+        function startProcessing() {
+            let lastProcessTime = 0;
+            const targetFPS = 30;
+            const frameInterval = 1000 / targetFPS;
+
+            function captureFrame() {
+                const now = performance.now();
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA && 
+                    now - lastProcessTime >= frameInterval) {
+                    
+                    // Draw video frame to get image data
+                    const tempCanvas = document.createElement('canvas');
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    
+                    tempCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    processFrame(imageData);
+                    lastProcessTime = now;
+                }
+                
+                requestAnimationFrame(captureFrame);
+            }
+            
+            captureFrame();
+        }
+
+        // Capture photo with higher quality
+        captureBtn.addEventListener('click', () => {
+            // Flash effect
+            flashIndicator.classList.add('active');
+            setTimeout(() => {
+                flashIndicator.classList.remove('active');
+            }, 300);
+
+            // Capture high-quality processed image
+            const highQualityCanvas = document.createElement('canvas');
+            const highQualityCtx = highQualityCanvas.getContext('2d');
+            
+            // Use original video resolution for high quality
+            highQualityCanvas.width = video.videoWidth;
+            highQualityCanvas.height = video.videoHeight;
+            
+            highQualityCtx.drawImage(video, 0, 0);
+            const imageData = highQualityCtx.getImageData(0, 0, highQualityCanvas.width, highQualityCanvas.height);
+            
+            // Create separate worker for high-quality processing
+            const captureWorker = createWorker();
+            captureWorker.onmessage = (e) => {
+                const { processedData } = e.data;
+                highQualityCtx.putImageData(processedData, 0, 0);
+                
+                const dataURL = highQualityCanvas.toDataURL('image/png');
+                
+                // Show in gallery preview
+                lastPhoto.src = dataURL;
+                lastPhoto.style.display = 'block';
+                
+                // Download the image
+                const link = document.createElement('a');
+                link.download = `edge-photo-${Date.now()}.png`;
+                link.href = dataURL;
+                link.click();
+                
+                captureWorker.terminate();
+            };
+            
+            captureWorker.postMessage({
+                imageData,
+                timestamp: performance.now()
+            });
+        });
+
+        // Flip camera
+        flipBtn.addEventListener('click', () => {
+            facingMode = facingMode === 'user' ? 'environment' : 'user';
+            initCamera();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (worker) {
+                worker.terminate();
+            }
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', initCamera);
+    </script>
+</body>
+</html>
