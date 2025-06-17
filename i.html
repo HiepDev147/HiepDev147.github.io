@@ -27,6 +27,7 @@
   </style>
 </head>
 <body>
+  <audio id="bgAudio" src="sound.ogg"></audio>
 <div id="overlay">
   <div>
     <div>Bấm OK để bắt đầu hiệu ứng nhẹ nhàng.</div>
@@ -37,6 +38,7 @@
 <div id="fps">FPS: ...</div>
 
 <script>
+const bgAudio = new Audio('sound.ogg');
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
   const fpsEl=document.getElementById('fps');
   const overlay=document.getElementById('overlay');
@@ -123,7 +125,19 @@
     requestAnimationFrame(animate);
   }
 
-  startBtn.onclick = ()=>{ overlay.style.display='none'; init(H*0.3); animate(); };
+  startBtn.onclick = () => {
+  overlay.style.display = 'none';
+  init(H * 0.3);
+  animate();
+  
+  // Phát ngay và lập lịch lặp lại sau mỗi 10s
+  bgAudio.currentTime = 0;
+  bgAudio.play();
+  setInterval(() => {
+    bgAudio.currentTime = 0;
+    bgAudio.play();
+  }, 10000);
+};
 
   let dragging = false, lastX=0, lastY=0;
   canvas.addEventListener('mousedown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
