@@ -3,75 +3,207 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test độ nhạy cảm ứng</title>
+  <title>Touch Device Tester ☆彡</title>
+
+  <!-- 🌈 CSS kawaii lấp lánh -->
   <style>
+    :root {
+      --bg1: #ff9a9e;
+      --bg2: #fad0c4;
+      --bg3: #fbc2eb;
+      --bg4: #a18cd1;
+    }
+
     body {
       margin: 0;
-      height: 100vh;
-      overflow: hidden;
-      background: linear-gradient(to right, #74ebd5, #acb6e5);
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 25%, var(--bg3) 60%, var(--bg4) 100%);
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      font-family: Arial, sans-serif;
-      touch-action: manipulation;
-    }
-
-    #info {
-      position: absolute;
-      top: 20px;
-      font-size: 1.2rem;
       color: #fff;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 10px 20px;
-      border-radius: 10px;
+      overflow: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;     /* Tránh scroll ngoài ý muốn */
     }
 
-    .touch-point {
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,.3);
+    }
+
+    #deviceInfo {
+      margin-bottom: 10px;
+      font-size: 1rem;
+      background: rgba(0,0,0,.25);
+      padding: 6px 14px;
+      border-radius: 12px;
+    }
+
+    #testZone {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      border-top: 2px dashed rgba(255,255,255,.4);
+    }
+
+    /* Bong bóng chạm */
+    .bubble {
       position: absolute;
-      width: 40px;
-      height: 40px;
-      background: rgba(255, 255, 255, 0.6);
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
+      background: rgba(255,255,255,.65);
+      box-shadow: 0 0 10px rgba(0,0,0,.4);
       transform: translate(-50%, -50%);
       pointer-events: none;
-      animation: fadeOut 1s forwards;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .8rem;
+      font-weight: bold;
+      color: #333;
+      transition: transform .1s linear;
     }
 
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      100% { opacity: 0; transform: scale(1.5) translate(-50%, -50%); }
+    #log {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 35%;
+      overflow-y: auto;
+      background: rgba(0,0,0,.35);
+      padding: 6px 8px;
+      font-size: .85rem;
+      line-height: 1.25rem;
     }
+
+    #log b { color: #ffeb3b; }
   </style>
 </head>
 <body>
-  <div id="info">Chạm vào màn hình để kiểm tra thời gian phản hồi...</div>
+  <h1>🖐️ Touch Device Tester</h1>
+  <div id="deviceInfo">Đang phát hiện thiết bị...</div>
 
+  <div id="testZone"></div>
+
+  <!-- Nhựt ký sự kiện -->
+  <div id="log"></div>
+
+  <!-- 🧩 JavaScript ma thuật -->
   <script>
-    let info = document.getElementById("info");
+    /* ---------- Thông tin cơ bản ---------- */
+    const infoBox = document.getElementById("deviceInfo");
+    const maxTouches = navigator.maxTouchPoints || 0;
+    const hasTouch = "ontouchstart" in window || maxTouches > 0;
+    const hasPointer = "PointerEvent" in window;
 
-    document.addEventListener("touchstart", function (e) {
-      const start = performance.now();
-      const touch = e.touches[0];
-      const x = touch.clientX;
-      const y = touch.clientY;
+    infoBox.innerHTML = `
+      Thiết bị: <b>${navigator.userAgent}</b><br>
+      Hỗ trợ Touch Events: <b>${hasTouch ? "Có" : "Không"}</b> |
+      Pointer Events: <b>${hasPointer ? "Có" : "Không"}</b> |
+      Số điểm chạm tối đa: <b>${maxTouches}</b>
+    `;
 
-      // Tạo điểm chạm
-      const point = document.createElement("div");
-      point.className = "touch-point";
-      point.style.left = x + "px";
-      point.style.top = y + "px";
-      document.body.appendChild(point);
+    /* ---------- Phần test chính ---------- */
+    const zone = document.getElementById("testZone");
+    const log = document.getElementById("log");
 
-      // Đo thời gian phản hồi
-      requestAnimationFrame(() => {
-        const end = performance.now();
-        const delay = (end - start).toFixed(2);
-        info.textContent = `Phản hồi: ${delay} ms`;
+    function addLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      log.innerHTML = `[${time}] ${msg}<br>` + log.innerHTML;
+    }
 
-        // Xoá điểm chạm sau 1 giây
-        setTimeout(() => point.remove(), 1000);
+    /* Tạo / update bong bóng cho mỗi touch */
+    const bubbles = new Map();     // key = identifier
+
+    function createBubble(id, x, y) {
+      const el = document.createElement("div");
+      el.className = "bubble";
+      el.dataset.id = id;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.textContent = id;
+      zone.appendChild(el);
+      bubbles.set(id, el);
+    }
+
+    function moveBubble(id, x, y, scale = 1) {
+      const el = bubbles.get(id);
+      if (!el) return;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.transform = `translate(-50%,-50%) scale(${scale})`;
+    }
+
+    function removeBubble(id) {
+      const el = bubbles.get(id);
+      if (el) el.remove();
+      bubbles.delete(id);
+    }
+
+    /* ---------- Touch Events ---------- */
+    zone.addEventListener("touchstart", e => {
+      for (const t of e.changedTouches) {
+        createBubble(t.identifier, t.clientX, t.clientY);
+        addLog(`Touch <b>${t.identifier}</b> start 👉 (${t.clientX}, ${t.clientY})`);
+      }
+    });
+
+    zone.addEventListener("touchmove", e => {
+      for (const t of e.changedTouches) {
+        const pressure = (t.force || 0.5) + 0.5;      // scale 0.5~1.5
+        moveBubble(t.identifier, t.clientX, t.clientY, pressure);
+        addLog(`Touch <b>${t.identifier}</b> move 🏃 (${t.clientX}, ${t.clientY}) force=${t.force.toFixed(2)}`);
+      }
+    });
+
+    zone.addEventListener("touchend", e => {
+      for (const t of e.changedTouches) {
+        removeBubble(t.identifier);
+        addLog(`Touch <b>${t.identifier}</b> end ✋`);
+      }
+    });
+
+    zone.addEventListener("touchcancel", e => {
+      for (const t of e.changedTouches) {
+        removeBubble(t.identifier);
+        addLog(`Touch <b>${t.identifier}</b> cancel ❌`);
+      }
+    });
+
+    /* ---------- Fallback Pointer Events (nếu hỗ trợ) ---------- */
+    if (hasPointer) {
+      zone.addEventListener("pointerdown", e => {
+        if (e.pointerType !== "touch") return;       // chỉ xử lý touch pointer
+        createBubble(e.pointerId, e.clientX, e.clientY);
+        addLog(`Pointer <b>${e.pointerId}</b> down (${e.clientX}, ${e.clientY})`);
       });
+
+      zone.addEventListener("pointermove", e => {
+        if (e.pointerType !== "touch") return;
+        const pressure = e.pressure ? e.pressure + 0.5 : 1;
+        moveBubble(e.pointerId, e.clientX, e.clientY, pressure);
+      });
+
+      ["pointerup", "pointercancel", "pointerleave"].forEach(type => {
+        zone.addEventListener(type, e => {
+          if (e.pointerType !== "touch") return;
+          removeBubble(e.pointerId);
+          addLog(`Pointer <b>${e.pointerId}</b> ${type}`);
+        });
+      });
+    }
+
+    /* ---------- Chỉnh size log theo viewport ---------- */
+    window.addEventListener("resize", () => {
+      const vh = window.innerHeight;
+      log.style.maxHeight = (vh * 0.35) + "px";
     });
   </script>
 </body>
