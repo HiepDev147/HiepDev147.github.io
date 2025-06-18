@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test độ nhạy cảm ứng</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(to right, #74ebd5, #acb6e5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    #info {
+      position: absolute;
+      top: 20px;
+      font-size: 1.2rem;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+
+    .touch-point {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: fadeOut 1s forwards;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.5) translate(-50%, -50%); }
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Chạm vào màn hình để kiểm tra thời gian phản hồi...</div>
+
+  <script>
+    let info = document.getElementById("info");
+
+    document.addEventListener("touchstart", function (e) {
+      const start = performance.now();
+      const touch = e.touches[0];
+      const x = touch.clientX;
+      const y = touch.clientY;
+
+      // Tạo điểm chạm
+      const point = document.createElement("div");
+      point.className = "touch-point";
+      point.style.left = x + "px";
+      point.style.top = y + "px";
+      document.body.appendChild(point);
+
+      // Đo thời gian phản hồi
+      requestAnimationFrame(() => {
+        const end = performance.now();
+        const delay = (end - start).toFixed(2);
+        info.textContent = `Phản hồi: ${delay} ms`;
+
+        // Xoá điểm chạm sau 1 giây
+        setTimeout(() => point.remove(), 1000);
+      });
+    });
+  </script>
+</body>
+</html>
