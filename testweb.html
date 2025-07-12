@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Marketplace Free</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+    #original-img {
+  position: fixed;
+  top: 50%; left: 70%;
+  transform: translate(-50%, -50%);
+  width: 100vh; height: 100vh;
+  object-fit: cover;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease-in, visibility 0s linear 0.5s;
+  z-index: 0; /* phải cao hơn video nếu muốn thấy */
+}
+
+#original-img.show {
+  visibility: visible; /* hiện ngay */
+  opacity: 1;          /* fade in */
+  transition-delay: 0s;
+}
+        /* Video Background */
+        .video-background {
+  position: fixed; top: 50%; left: 70%;
+  transform: translate(-50%, -50%);
+  min-width: 100vh; min-height: 100vh;
+  width: 100vh;    height: 100vh;
+  object-fit: cover;
+  z-index: -1;
+}
+
+        .video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 204, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 0, 136, 0.1) 0%, transparent 50%),
+                rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 255, 136, 0.1);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 136, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+
+        /* Main Content */
+        .main-content {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 2rem;
+        }
+
+        .content-wrapper {
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 999;
+        }
+
+        .subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: clamp(1.1rem, 3vw, 1.6rem);
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            font-weight: 400;
+            letter-spacing: 1px;
+            z-index: 999;
+        }
+
+        .cta-button {
+    display: inline-block;
+    padding: 0.8rem 2.5rem;              /* giảm kích thước cho gọn */
+    background: linear-gradient(135deg, #00ff88, #00ccff);
+    color: #fff;                         /* trắng cho tương phản tốt hơn */
+    text-decoration: none;
+    border-radius: 30px;                 /* bo cong nhẹ nhàng */
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 2px solid transparent;      /* ẩn border khi bình thường */
+    box-shadow: 0 4px 12px rgba(0, 204, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    z-index: 999;
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 204, 255, 0.4);
+    border-color: #00ccff;               /* border nhấp nháy nhẹ */
+}
+
+/* Hiệu ứng ánh sáng lướt qua */
+.cta-button::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255,255,255,0.2);
+    transform: rotate(45deg) translate(-100%, -100%);
+    transition: transform 0.6s ease;
+}
+
+.cta-button:hover::before {
+    transform: rotate(45deg) translate(100%, 100%);
+}
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+            padding: 2rem;
+        }
+
+        .feature-card {
+            background: rgba(0, 255, 136, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.5));
+        }
+
+        .feature-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #00ff88;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .feature-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 204, 255, 0.6);
+            }
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Sci-fi Grid Background */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 136, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .navbar {
+                padding: 1rem;
+            }
+            
+            .main-content {
+                padding: 0 1rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #00ff88;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .particle:nth-child(even) {
+            background: #00ccff;
+            box-shadow: 0 0 6px #00ccff;
+        }
+
+        .particle:nth-child(3n) {
+            background: #ff0088;
+            box-shadow: 0 0 6px #ff0088;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background -->
+    <video id="bg-video" class="video-background" autoplay muted>
+    <source src="steve.webm" type="video/webm">
+</video>
+<img src="steve.png" id="original-img">
+    <div class="video-overlay"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">⚡ NEXUS</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#support">Support</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <h1 class="title">Get Marketplace Free</h1>
+            <p class="subtitle">
+                Discover the ultimate gaming experience with Steve! Access exclusive marketplace features
+                and unlock premium content completely free. Join the future of gaming today.
+            </p>
+            <a href="#" class="cta-button" onclick="redirectToNewPage()">
+                Get Free
+            </a>
+        </div>
+    </main>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3 class="feature-title">Lightning Fast</h3>
+            <p class="feature-description">Ultra-fast downloads with unlimited bandwidth and instant access</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🛡️</span>
+            <h3 class="feature-title">Secure & Safe</h3>
+            <p class="feature-description">Advanced encryption and security protocols ensure 100% safety</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🎮</span>
+            <h3 class="feature-title">Premium Experience</h3>
+            <p class="feature-description">Cutting-edge interface designed for the ultimate gaming experience</p>
+        </div>
+    </section>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 6) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(0, 0, 0, 0.8)';
+                navbar.style.backdropFilter = 'blur(20px)';
+                navbar.style.borderBottomColor = 'rgba(0, 255, 136, 0.5)';
+            } else {
+                navbar.style.background = 'rgba(0, 0, 0, 0.1)';
+                navbar.style.backdropFilter = 'blur(15px)';
+                navbar.style.borderBottomColor = 'rgba(0, 255, 136, 0.3)';
+            }
+        });
+
+        function redirectToNewPage() {
+    // Fix trượt khỏi viewport
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.transformOrigin = 'center center';
+    
+    // Hiệu ứng chuyển cảnh
+    document.body.style.transition = 'all 0.8s ease-out';
+    document.body.style.transform = 'scale(1.1)';
+    document.body.style.opacity = '0';
+    document.body.style.filter = 'blur(10px)';
+    
+    setTimeout(() => {
+        window.location.href = 'mod.html';
+    }, 800);
+}
+
+        const originalImg = document.getElementById('original-img');
+const bgVideo = document.getElementById('bg-video');
+
+bgVideo.addEventListener('ended', () => {
+    // Delay tí để CSS kịp áp dụng transition
+    setTimeout(() => originalImg.classList.add('show'), 10);
+});
+
+        // Initialize particles
+        createParticles();
+
+        // Add smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Add cyber typing effect to title
+        function cyberTypeEffect() {
+            const title = document.querySelector('.title');
+            const text = title.textContent;
+            title.textContent = '';
+            
+            let i = 0;
+            const typeInterval = setInterval(() => {
+                if (i < text.length) {
+                    title.textContent += text[i];
+                    // Add random glitch effect
+                    if (Math.random() < 0.1) {
+                        title.style.transform = `translate(${Math.random() * 2 - 1}px, ${Math.random() * 2 - 1}px)`;
+                        setTimeout(() => {
+                            title.style.transform = 'translate(0, 0)';
+                        }, 50);
+                    }
+                    i++;
+                } else {
+                    clearInterval(typeInterval);
+                }
+            }, 80);
+        }
+
+        // Start typing effect after page load
+        window.addEventListener('load', () => {
+            setTimeout(cyberTypeEffect, 800);
+        });
+    </script>
+</body>
+  </html>
