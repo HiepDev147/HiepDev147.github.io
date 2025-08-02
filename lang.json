@@ -1,0 +1,20 @@
+{
+  "en": {
+    "humidity-label": "Humidity:",
+    "feelsLike-label": "Feels like: ",
+    "wind": "Wind",
+    "loading": "Getting your location and weather..."
+  },
+  "vi": {
+    "humidity-label": "Độ ẩm:",
+    "feelsLike-label": "Cảm giác như: ",
+    "wind": "Gió",
+    "loading": "Đang lấy vị trí và thời tiết của bạn..."
+  },
+  "ja": {
+    "humidity-label": "湿度：",
+    "feelsLike-label": "体感温度: ",
+    "wind": "風",
+    "loading": "現在地と天気を取得中です..."
+  }
+}
